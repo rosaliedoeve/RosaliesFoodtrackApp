@@ -570,6 +570,21 @@
             gap: 8px;
         }
 
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-header h3 {
+            margin-bottom: 0;
+        }
+
+        .chart-avg {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
         .chart-wrapper {
             position: relative;
             height: 200px;
@@ -895,7 +910,7 @@
         <div class="metric-card food">
             <div class="metric-header">
                 <div class="metric-title">
-                    <span class="emoji">🍽️</span> Food
+                    <span class="emoji">🍉</span> Food
                 </div>
                 <button class="btn btn-small add-btn" onclick="showPage('food')">+ Add</button>
             </div>
@@ -963,7 +978,7 @@
         <div class="metric-card weight">
             <div class="metric-header">
                 <div class="metric-title">
-                    <span class="emoji">⚖️</span> Weight
+                    <span class="emoji">🪆</span> Weight
                 </div>
                 <button class="btn btn-small add-btn" onclick="openModal('weight')">+ Add</button>
             </div>
@@ -1001,7 +1016,7 @@
         <div class="food-entry-tabs">
             <button class="active" onclick="switchFoodTab('preset')">📋 Presets</button>
             <button onclick="switchFoodTab('manual')">✏️ Manual</button>
-            <button onclick="switchFoodTab('ai')">🔮 Describe</button>
+            <button onclick="switchFoodTab('ai')">🔮 AI</button>
         </div>
 
         <!-- Preset Food Entry -->
@@ -1092,27 +1107,39 @@
     <!-- Data Page -->
     <div id="page-data" class="page">
         <div class="chart-period-tabs">
-            <button class="active" onclick="setChartPeriod('day')">Day</button>
-            <button onclick="setChartPeriod('week')">Week</button>
+            <button class="active" onclick="setChartPeriod('week')">Week</button>
             <button onclick="setChartPeriod('month')">Month</button>
+            <button onclick="setChartPeriod('year')">Year</button>
+        </div>
+
+        <div class="date-picker">
+            <button onclick="changeDataPeriod(-1)">◀</button>
+            <span class="current-date" id="data-period-display">This Week</span>
+            <button onclick="changeDataPeriod(1)">▶</button>
         </div>
 
         <div class="chart-container">
-            <h3>🍽️ Calories</h3>
+            <div class="chart-header">
+                <h3>🥐 Calories</h3>
+                <span class="chart-avg" id="avg-calories"></span>
+            </div>
             <div class="chart-wrapper">
                 <canvas id="chart-calories"></canvas>
             </div>
         </div>
 
         <div class="chart-container">
-            <h3>⚖️ Weight</h3>
+            <h3>🪆 Weight</h3>
             <div class="chart-wrapper">
                 <canvas id="chart-weight"></canvas>
             </div>
         </div>
 
         <div class="chart-container">
-            <h3>👠 Steps</h3>
+            <div class="chart-header">
+                <h3>👠 Steps</h3>
+                <span class="chart-avg" id="avg-steps"></span>
+            </div>
             <div class="chart-wrapper">
                 <canvas id="chart-steps"></canvas>
             </div>
@@ -1126,7 +1153,10 @@
         </div>
 
         <div class="chart-container">
-            <h3>❤️ Heart Zone Minutes</h3>
+            <div class="chart-header">
+                <h3>❤️ Heart Zone Minutes</h3>
+                <span class="chart-avg" id="avg-minutes"></span>
+            </div>
             <div class="chart-wrapper">
                 <canvas id="chart-minutes"></canvas>
             </div>
@@ -1233,10 +1263,22 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="showPage('home')">🕌</div>
-        <div class="nav-item" onclick="showPage('food')">🍣</div>
-        <div class="nav-item" onclick="showPage('data')">🧮</div>
-        <div class="nav-item" onclick="showPage('settings')">⚙️</div>
+        <div class="nav-item active" onclick="showPage('home')">
+            🛖
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="showPage('food')">
+            🍣
+            <span>Food</span>
+        </div>
+        <div class="nav-item" onclick="showPage('data')">
+            🧮
+            <span>Data</span>
+        </div>
+        <div class="nav-item" onclick="showPage('settings')">
+            🧬
+            <span>Settings</span>
+        </div>
     </nav>
 
     <!-- Modal for Quick Entry -->
@@ -1287,7 +1329,8 @@
         let currentDate = new Date();
         let currentModalType = '';
         let selectedPreset = null;
-        let chartPeriod = 'day';
+        let chartPeriod = 'week';
+        let dataPeriodOffset = 0; // 0 = current, -1 = previous, etc.
         let charts = {};
         let donutCharts = {};
 
@@ -1484,7 +1527,10 @@
             // Update displays
             if (pageName === 'home') updateHomeDisplay();
             if (pageName === 'food') updateFoodDisplay();
-            if (pageName === 'data') updateCharts();
+            if (pageName === 'data') {
+                updateDataPeriodDisplay();
+                updateCharts();
+            }
             if (pageName === 'settings') loadGoalsToForm();
         }
 
@@ -2185,9 +2231,74 @@ Important:
         // ==================== CHARTS ====================
         function setChartPeriod(period) {
             chartPeriod = period;
+            dataPeriodOffset = 0; // Reset to current period
             document.querySelectorAll('.chart-period-tabs button').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
+            updateDataPeriodDisplay();
             updateCharts();
+        }
+
+        function changeDataPeriod(delta) {
+            // Only allow going back (negative offset) or returning to current (up to 0)
+            const newOffset = dataPeriodOffset + delta;
+            if (newOffset > 0) return; // Can't go into the future
+            dataPeriodOffset = newOffset;
+            updateDataPeriodDisplay();
+            updateCharts();
+        }
+
+        function updateDataPeriodDisplay() {
+            const today = new Date();
+            let displayText = '';
+
+            if (chartPeriod === 'week') {
+                if (dataPeriodOffset === 0) {
+                    displayText = 'This Week';
+                } else if (dataPeriodOffset === -1) {
+                    displayText = 'Last Week';
+                } else {
+                    // Calculate the Monday of that week
+                    const currentDay = today.getDay();
+                    const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+                    const monday = new Date(today);
+                    monday.setDate(today.getDate() + mondayOffset + (dataPeriodOffset * 7));
+                    const sunday = new Date(monday);
+                    sunday.setDate(monday.getDate() + 6);
+                    displayText = `${monday.getDate()} ${monday.toLocaleDateString('en-US', { month: 'short' })} - ${sunday.getDate()} ${sunday.toLocaleDateString('en-US', { month: 'short' })}`;
+                }
+            } else if (chartPeriod === 'month') {
+                const targetDate = new Date(today.getFullYear(), today.getMonth() + dataPeriodOffset, 1);
+                if (dataPeriodOffset === 0) {
+                    displayText = 'This Month';
+                } else if (dataPeriodOffset === -1) {
+                    displayText = 'Last Month';
+                } else {
+                    displayText = targetDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                }
+            } else if (chartPeriod === 'year') {
+                const targetYear = today.getFullYear() + dataPeriodOffset;
+                if (dataPeriodOffset === 0) {
+                    displayText = 'This Year';
+                } else if (dataPeriodOffset === -1) {
+                    displayText = 'Last Year';
+                } else {
+                    displayText = targetYear.toString();
+                }
+            }
+
+            document.getElementById('data-period-display').textContent = displayText;
+        }
+
+        function getDayValue(type, date) {
+            let value;
+            if (type === 'calories' || type === 'protein') {
+                const foods = loadData('foods', date) || [];
+                if (type === 'calories') value = foods.reduce((sum, f) => sum + f.calories, 0);
+                else value = foods.reduce((sum, f) => sum + f.protein, 0);
+            } else {
+                value = loadData(type, date);
+            }
+            return value;
         }
 
         function getChartData(type) {
@@ -2195,38 +2306,121 @@ Important:
             const labels = [];
             const today = new Date();
 
-            let days;
-            if (chartPeriod === 'day') days = 7;
-            else if (chartPeriod === 'week') days = 28;
-            else days = 90;
+            if (chartPeriod === 'week') {
+                // Week view: Monday to Sunday (with offset)
+                const currentDay = today.getDay();
+                const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+                const monday = new Date(today);
+                monday.setDate(today.getDate() + mondayOffset + (dataPeriodOffset * 7));
 
-            for (let i = days - 1; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(monday);
+                    date.setDate(monday.getDate() + i);
 
-                let value;
-                if (type === 'calories' || type === 'protein') {
-                    const foods = loadData('foods', date) || [];
-                    if (type === 'calories') value = foods.reduce((sum, f) => sum + f.calories, 0);
-                    else value = foods.reduce((sum, f) => sum + f.protein, 0);
-                } else {
-                    value = loadData(type, date);
-                }
+                    const value = getDayValue(type, date);
 
-                // For weight, use null for missing days (line will span gaps)
-                // For other metrics, use 0 for missing days
-                if (type === 'weight') {
-                    data.push(value || null);
-                } else {
-                    data.push(value || 0);
-                }
+                    if (type === 'weight') {
+                        data.push(value || null);
+                    } else {
+                        data.push(value || 0);
+                    }
 
-                if (chartPeriod === 'day') {
                     labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-                } else if (chartPeriod === 'week') {
-                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-                } else {
-                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                }
+            } else if (chartPeriod === 'month') {
+                // Month view: aggregate by week (with offset)
+                const targetDate = new Date(today.getFullYear(), today.getMonth() + dataPeriodOffset, 1);
+                const year = targetDate.getFullYear();
+                const month = targetDate.getMonth();
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+
+                // Find the Monday of the week containing the 1st
+                let weekStart = new Date(firstDay);
+                const firstDayOfWeek = firstDay.getDay();
+                const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
+                weekStart.setDate(firstDay.getDate() + mondayOffset);
+
+                let weekNum = 1;
+                while (weekStart <= lastDay) {
+                    let weekTotal = 0;
+                    let weekCount = 0;
+                    let hasData = false;
+
+                    for (let d = 0; d < 7; d++) {
+                        const date = new Date(weekStart);
+                        date.setDate(weekStart.getDate() + d);
+
+                        // Only count days within the current month
+                        if (date.getMonth() === month) {
+                            const value = getDayValue(type, date);
+                            if (type === 'weight') {
+                                if (value) {
+                                    weekTotal += value;
+                                    weekCount++;
+                                    hasData = true;
+                                }
+                            } else {
+                                weekTotal += value || 0;
+                                weekCount++;
+                                if (value > 0) hasData = true;
+                            }
+                        }
+                    }
+
+                    if (weekCount > 0) {
+                        if (type === 'weight') {
+                            data.push(hasData ? Math.round(weekTotal / weekCount * 10) / 10 : null);
+                        } else {
+                            data.push(Math.round(weekTotal / weekCount));
+                        }
+                        labels.push(`Week ${weekNum}`);
+                        weekNum++;
+                    }
+
+                    weekStart.setDate(weekStart.getDate() + 7);
+                }
+            } else if (chartPeriod === 'year') {
+                // Year view: aggregate by month (with offset)
+                const year = today.getFullYear() + dataPeriodOffset;
+
+                for (let month = 0; month < 12; month++) {
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    let monthTotal = 0;
+                    let monthCount = 0;
+                    let hasData = false;
+
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const date = new Date(year, month, day);
+
+                        // Don't include future dates
+                        if (date > today) continue;
+
+                        const value = getDayValue(type, date);
+                        if (type === 'weight') {
+                            if (value) {
+                                monthTotal += value;
+                                monthCount++;
+                                hasData = true;
+                            }
+                        } else {
+                            monthTotal += value || 0;
+                            monthCount++;
+                            if (value > 0) hasData = true;
+                        }
+                    }
+
+                    if (monthCount > 0) {
+                        if (type === 'weight') {
+                            data.push(hasData ? Math.round(monthTotal / monthCount * 10) / 10 : null);
+                        } else {
+                            data.push(Math.round(monthTotal / monthCount));
+                        }
+                    } else {
+                        data.push(type === 'weight' ? null : 0);
+                    }
+
+                    labels.push(new Date(year, month, 1).toLocaleDateString('en-US', { month: 'short' }));
                 }
             }
 
@@ -2326,6 +2520,29 @@ Important:
             createChart('chart-steps', 'steps', '#F17496', 'steps', goals.steps);
             createChart('chart-minutes', 'minutes', '#F1ACFF', 'min', goals.minutes);
             createChart('chart-weight', 'weight', '#886F8B', 'kg', goals.weight, 'line');
+
+            // Calculate and display averages
+            updateChartAverages();
+        }
+
+        function updateChartAverages() {
+            const caloriesData = getChartData('calories');
+            const stepsData = getChartData('steps');
+            const minutesData = getChartData('minutes');
+
+            // Calculate averages (only for days with data > 0)
+            const calcAvg = (data) => {
+                const nonZero = data.filter(v => v > 0);
+                return nonZero.length > 0 ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : 0;
+            };
+
+            const avgCalories = calcAvg(caloriesData.data);
+            const avgSteps = calcAvg(stepsData.data);
+            const avgMinutes = calcAvg(minutesData.data);
+
+            document.getElementById('avg-calories').textContent = avgCalories > 0 ? `🌀 ${avgCalories.toLocaleString()} kcal` : '';
+            document.getElementById('avg-steps').textContent = avgSteps > 0 ? `🌀 ${avgSteps.toLocaleString()}` : '';
+            document.getElementById('avg-minutes').textContent = avgMinutes > 0 ? `🌀 ${avgMinutes} min` : '';
         }
 
         // ==================== SETTINGS ====================
