@@ -1256,8 +1256,9 @@
         <div class="settings-section">
             <h3>💾 Data</h3>
             <button class="btn btn-secondary" onclick="exportData()" style="width: 100%; margin-bottom: 10px;">Export All Data</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="width: 100%;">Import Data</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="width: 100%; margin-bottom: 10px;">Import Data</button>
             <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+            <button class="btn btn-secondary" onclick="resetFoodDatabase()" style="width: 100%;">Reset food database to default</button>
         </div>
     </div>
 
@@ -1510,6 +1511,14 @@
             localStorage.setItem('health_preset_foods', JSON.stringify(foods));
         }
 
+        function resetFoodDatabase() {
+            if (confirm('This will reset your preset foods to the default database. Any custom foods you added will be removed. Your tracked meals and other data will NOT be affected. Continue?')) {
+                localStorage.removeItem('health_preset_foods');
+                filterPresetList(''); // Refresh the preset list in settings
+                alert('Food database has been reset to default!');
+            }
+        }
+
         // ==================== NAVIGATION ====================
         function showPage(pageName) {
             // Hide all pages
@@ -1551,10 +1560,10 @@
         // ==================== HOME PAGE ====================
         function updateHomeDisplay() {
             const goals = getGoals();
-            const foods = loadData('foods') || [];
-            const steps = loadData('steps') || 0;
-            const minutes = loadData('minutes') || 0;
-            const weight = loadData('weight');
+            const foods = loadData('foods', currentDate) || [];
+            const steps = loadData('steps', currentDate) || 0;
+            const minutes = loadData('minutes', currentDate) || 0;
+            const weight = loadData('weight', currentDate);
 
             // Calculate food totals
             const totalCalories = foods.reduce((sum, f) => sum + f.calories, 0);
@@ -1781,9 +1790,9 @@
                 timestamp: Date.now()
             };
 
-            const foods = loadData('foods') || [];
+            const foods = loadData('foods', currentDate) || [];
             foods.push(food);
-            saveData('foods', foods);
+            saveData('foods', foods, currentDate);
 
             // Reset
             selectedPreset = null;
@@ -1812,9 +1821,9 @@
                 timestamp: Date.now()
             };
 
-            const foods = loadData('foods') || [];
+            const foods = loadData('foods', currentDate) || [];
             foods.push(food);
-            saveData('foods', foods);
+            saveData('foods', foods, currentDate);
 
             // Reset form
             document.getElementById('manual-food-name').value = '';
@@ -1826,15 +1835,15 @@
         }
 
         function deleteFood(index) {
-            const foods = loadData('foods') || [];
+            const foods = loadData('foods', currentDate) || [];
             foods.splice(index, 1);
-            saveData('foods', foods);
+            saveData('foods', foods, currentDate);
             updateFoodDisplay();
             updateHomeDisplay();
         }
 
         function updateFoodDisplay() {
-            const foods = loadData('foods') || [];
+            const foods = loadData('foods', currentDate) || [];
             const list = document.getElementById('food-list-items');
 
             // Update totals
@@ -2188,7 +2197,7 @@ Important:
         function addAIMealItems() {
             if (aiMealItems.length === 0) return;
 
-            const foods = loadData('foods') || [];
+            const foods = loadData('foods', currentDate) || [];
 
             // Calculate totals
             const totalCalories = aiMealItems.reduce((sum, item) => sum + (item.calories || 0), 0);
@@ -2214,7 +2223,7 @@ Important:
                 timestamp: Date.now()
             });
 
-            saveData('foods', foods);
+            saveData('foods', foods, currentDate);
 
             // Reset
             aiMealItems = [];
