@@ -1105,9 +1105,9 @@
         </div>
 
         <div class="chart-container">
-            <h3>🥩 Protein</h3>
+            <h3>⚖️ Weight</h3>
             <div class="chart-wrapper">
-                <canvas id="chart-protein"></canvas>
+                <canvas id="chart-weight"></canvas>
             </div>
         </div>
 
@@ -1119,16 +1119,16 @@
         </div>
 
         <div class="chart-container">
-            <h3>❤️ Heart Zone Minutes</h3>
+            <h3>🥩 Protein</h3>
             <div class="chart-wrapper">
-                <canvas id="chart-minutes"></canvas>
+                <canvas id="chart-protein"></canvas>
             </div>
         </div>
 
         <div class="chart-container">
-            <h3>⚖️ Weight</h3>
+            <h3>❤️ Heart Zone Minutes</h3>
             <div class="chart-wrapper">
-                <canvas id="chart-weight"></canvas>
+                <canvas id="chart-minutes"></canvas>
             </div>
         </div>
     </div>
@@ -2222,10 +2222,16 @@ Important:
                     if (type === 'calories') value = foods.reduce((sum, f) => sum + f.calories, 0);
                     else value = foods.reduce((sum, f) => sum + f.protein, 0);
                 } else {
-                    value = loadData(type, date) || 0;
+                    value = loadData(type, date);
                 }
 
-                data.push(value || 0);
+                // For weight, use null for missing days (line will span gaps)
+                // For other metrics, use 0 for missing days
+                if (type === 'weight') {
+                    data.push(value || null);
+                } else {
+                    data.push(value || 0);
+                }
 
                 if (chartPeriod === 'day') {
                     labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
@@ -2262,6 +2268,7 @@ Important:
                 tension: 0.3,
                 pointRadius: 4,
                 pointBackgroundColor: color,
+                spanGaps: true,
                 order: 2
             } : {
                 label: unit,
