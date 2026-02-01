@@ -3486,13 +3486,22 @@ Important:
 
         function importFitbitData(event) {
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                alert('No file selected');
+                return;
+            }
+
+            alert(`Reading file: ${file.name}`);
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const lines = e.target.result.split('\n');
+                    // Remove BOM if present and normalize line endings
+                    let content = e.target.result.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                    const lines = content.split('\n');
                     let importedCount = 0;
+
+                    alert(`Found ${lines.length} lines in file. First line: ${lines[0]}`);
 
                     // Skip header row
                     for (let i = 1; i < lines.length; i++) {
