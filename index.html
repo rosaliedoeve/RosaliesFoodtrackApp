@@ -2399,20 +2399,25 @@ Important:
 
                 if (type === 'weight') {
                     // Weight: show daily data points for the entire year
+                    const tempData = [];
+                    const tempDates = [];
                     for (let month = 0; month < 12; month++) {
                         const daysInMonth = new Date(year, month + 1, 0).getDate();
                         for (let day = 1; day <= daysInMonth; day++) {
                             const date = new Date(year, month, day);
                             // Don't include future dates
                             if (date > today) continue;
-                            const value = getDayValue(type, date);
-                            data.push(value || null);
-                            // Show month name in middle of month (day 15), otherwise empty
-                            if (day === 15) {
-                                labels.push(new Date(year, month, 1).toLocaleDateString('en-US', { month: 'short' }));
-                            } else {
-                                labels.push('');
-                            }
+                            tempData.push(getDayValue(type, date) || null);
+                            tempDates.push(date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
+                        }
+                    }
+                    // Only show first and last date on x-axis
+                    for (let i = 0; i < tempData.length; i++) {
+                        data.push(tempData[i]);
+                        if (i === 0 || i === tempData.length - 1) {
+                            labels.push(tempDates[i]);
+                        } else {
+                            labels.push('');
                         }
                     }
                 } else {
@@ -2526,7 +2531,15 @@ Important:
                             }
                         },
                         x: {
-                            grid: { display: false }
+                            grid: { display: false },
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 0,
+                                callback: function(value, index, ticks) {
+                                    const label = this.getLabelForValue(value);
+                                    return label || null;
+                                }
+                            }
                         }
                     }
                 }
