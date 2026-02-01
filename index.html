@@ -964,6 +964,7 @@
                     <div class="progress-fill" id="home-steps-bar" style="width: 0%"></div>
                 </div>
             </div>
+            <div class="sub-text" id="steps-streak" style="margin-top: 8px;"></div>
         </div>
 
         <!-- Minutes Card -->
@@ -1523,6 +1524,36 @@
             }
         }
 
+        function calculateStepsStreak(stepsGoal) {
+            let streak = 0;
+            const today = new Date();
+            let checkDate = new Date(today);
+
+            // Start from yesterday (today might not be complete yet)
+            checkDate.setDate(checkDate.getDate() - 1);
+
+            // Go back day by day counting consecutive days where goal was met
+            while (true) {
+                const steps = loadData('steps', checkDate);
+                if (steps && steps >= stepsGoal) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+                // Safety limit - don't go back more than 365 days
+                if (streak > 365) break;
+            }
+
+            // Check if today also meets the goal (add to streak if so)
+            const todaySteps = loadData('steps', today);
+            if (todaySteps && todaySteps >= stepsGoal) {
+                streak++;
+            }
+
+            return streak;
+        }
+
         // ==================== NAVIGATION ====================
         function showPage(pageName) {
             // Hide all pages
@@ -1592,6 +1623,14 @@
             document.getElementById('home-steps').textContent = steps.toLocaleString();
             document.getElementById('home-steps-goal').textContent = goals.steps.toLocaleString();
             updateProgressBar('home-steps-bar', steps, goals.steps);
+
+            // Update steps streak
+            const stepsStreak = calculateStepsStreak(goals.steps);
+            if (stepsStreak > 0) {
+                document.getElementById('steps-streak').textContent = `🔥 ${stepsStreak} day streak!`;
+            } else {
+                document.getElementById('steps-streak').textContent = '';
+            }
 
             // Update minutes card
             document.getElementById('home-minutes').textContent = minutes;
@@ -2355,12 +2394,12 @@ Important:
                 const lastDay = new Date(year, month + 1, 0);
 
                 if (type === 'weight') {
-                    // Weight: show daily data points
+                    // Weight: show daily data points (no x-axis labels)
                     for (let day = 1; day <= lastDay.getDate(); day++) {
                         const date = new Date(year, month, day);
                         const value = getDayValue(type, date);
                         data.push(value || null);
-                        labels.push(day.toString());
+                        labels.push('');
                     }
                 } else {
                     // Other metrics: aggregate by week, show weekly averages
@@ -2453,7 +2492,7 @@ Important:
                             data.push(0);
                         }
 
-                        labels.push(new Date(year, month, 1).toLocaleDateString('en-US', { month: 'short' }));
+                        labels.push(new Date(year, month, 1).toLocaleDateString('en-US', { month: 'narrow' }));
                     }
                 }
             }
