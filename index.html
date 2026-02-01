@@ -381,6 +381,56 @@
             border-color: var(--steps-color);
         }
 
+        /* Voice Input */
+        .voice-input-container {
+            position: relative;
+            display: flex;
+            gap: 10px;
+        }
+
+        .voice-input-container textarea {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid rgba(30, 2, 64, 0.1);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .voice-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: var(--steps-color);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+            flex-shrink: 0;
+            align-self: flex-start;
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .voice-btn.listening {
+            background: #e53935;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
         /* Modal */
         .modal-overlay {
             display: none;
@@ -1138,7 +1188,12 @@
         <div id="food-tab-ai" class="food-entry-section">
             <div class="form-group">
                 <label>Describe your meal</label>
-                <textarea id="ai-meal-description" rows="3" placeholder="e.g., I had a bowl of oatmeal with a banana, some blueberries, and a tablespoon of peanut butter" style="width: 100%; padding: 14px; border: 2px solid rgba(30, 2, 64, 0.1); border-radius: 12px; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+                <div class="voice-input-container">
+                    <textarea id="ai-meal-description" rows="3" placeholder="e.g., I had a bowl of oatmeal with a banana, some blueberries, and a tablespoon of peanut butter"></textarea>
+                    <button type="button" class="voice-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Speak your meal">
+                        🎤
+                    </button>
+                </div>
             </div>
             <button class="btn btn-primary" onclick="analyzeMeal()" style="width: 100%;" id="analyze-btn">
                 <span id="analyze-btn-text">Analyze Meal</span>
@@ -1347,7 +1402,7 @@
         </div>
         <div class="nav-item" onclick="showPage('data')">
             🧮
-            <span>Data</span>
+            <span>Charts</span>
         </div>
         <div class="nav-item" onclick="showPage('settings')">
             🧬
@@ -2155,6 +2210,94 @@
             if (analyzeBtn) analyzeBtn.disabled = !hasKey;
         }
 
+        // ==================== VOICE INPUT ====================
+        let recognition = null;
+        let isListening = false;
+
+        function initVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                // Hide voice button if not supported
+                const voiceBtn = document.getElementById('voice-btn');
+                if (voiceBtn) voiceBtn.style.display = 'none';
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                const textarea = document.getElementById('ai-meal-description');
+                if (finalTranscript) {
+                    textarea.value += finalTranscript;
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.log('Speech recognition error:', event.error);
+                stopVoiceInput();
+                if (event.error === 'not-allowed') {
+                    alert('Microphone access denied. Please allow microphone access to use voice input.');
+                }
+            };
+
+            recognition.onend = () => {
+                if (isListening) {
+                    // Restart if still supposed to be listening
+                    recognition.start();
+                }
+            };
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                initVoiceRecognition();
+                if (!recognition) {
+                    alert('Voice input is not supported in this browser.');
+                    return;
+                }
+            }
+
+            if (isListening) {
+                stopVoiceInput();
+            } else {
+                startVoiceInput();
+            }
+        }
+
+        function startVoiceInput() {
+            const voiceBtn = document.getElementById('voice-btn');
+            isListening = true;
+            voiceBtn.classList.add('listening');
+            voiceBtn.textContent = '⏹';
+            recognition.start();
+        }
+
+        function stopVoiceInput() {
+            const voiceBtn = document.getElementById('voice-btn');
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            voiceBtn.textContent = '🎤';
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+
         async function analyzeMeal() {
             const description = document.getElementById('ai-meal-description').value.trim();
             if (!description) {
@@ -2776,6 +2919,7 @@ Important:
             updateDateDisplays();
             loadGoalsToForm();
             updateHomeDisplay();
+            initVoiceRecognition();
         }
 
         // Close modal on overlay click
