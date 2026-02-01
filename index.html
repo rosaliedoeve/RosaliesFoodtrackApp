@@ -1592,7 +1592,7 @@
             <span>Charts</span>
         </div>
         <div class="nav-item" onclick="showPage('insights')">
-            💡
+            🪄
             <span>Insights</span>
         </div>
         <div class="nav-item" onclick="showPage('settings')">
@@ -2850,7 +2850,9 @@ Important:
 
                     const value = getDayValue(type, date);
 
-                    if (type === 'weight') {
+                    // For weight and restingHR, keep null for missing data
+                    // For other types, convert null to 0
+                    if (type === 'weight' || type === 'restingHR') {
                         data.push(value || null);
                     } else {
                         data.push(value || 0);
@@ -2884,7 +2886,7 @@ Important:
                     while (weekStart <= lastDay) {
                         let weekTotal = 0;
                         let weekCount = 0;
-                        let hasData = false;
+                        let validCount = 0;
 
                         for (let d = 0; d < 7; d++) {
                             const date = new Date(weekStart);
@@ -2893,15 +2895,18 @@ Important:
                             // Only count days within the current month
                             if (date.getMonth() === month) {
                                 const value = getDayValue(type, date);
-                                weekTotal += value || 0;
                                 weekCount++;
-                                if (value > 0) hasData = true;
+                                if (value !== null && value !== undefined && value > 0) {
+                                    weekTotal += value;
+                                    validCount++;
+                                }
                             }
                         }
 
                         if (weekCount > 0) {
-                            // Show average for the week
-                            data.push(hasData ? Math.round(weekTotal / weekCount) : 0);
+                            // For restingHR, only average valid values; for others, average over all days
+                            const divisor = (type === 'restingHR' && validCount > 0) ? validCount : weekCount;
+                            data.push(validCount > 0 ? Math.round(weekTotal / divisor) : 0);
                             // Show first date of the week as label
                             const labelDate = new Date(weekStart);
                             if (labelDate.getMonth() < month) {
@@ -2947,20 +2952,24 @@ Important:
                         const daysInMonth = new Date(year, month + 1, 0).getDate();
                         let monthTotal = 0;
                         let monthCount = 0;
-                        let hasData = false;
+                        let validCount = 0;
 
                         for (let day = 1; day <= daysInMonth; day++) {
                             const date = new Date(year, month, day);
                             // Don't include future dates
                             if (date > today) continue;
                             const value = getDayValue(type, date);
-                            monthTotal += value || 0;
                             monthCount++;
-                            if (value > 0) hasData = true;
+                            if (value !== null && value !== undefined && value > 0) {
+                                monthTotal += value;
+                                validCount++;
+                            }
                         }
 
                         if (monthCount > 0) {
-                            data.push(hasData ? Math.round(monthTotal / monthCount) : 0);
+                            // For restingHR, only average valid values; for others, average over all days
+                            const divisor = (type === 'restingHR' && validCount > 0) ? validCount : monthCount;
+                            data.push(validCount > 0 ? Math.round(monthTotal / divisor) : 0);
                         } else {
                             data.push(0);
                         }
@@ -3135,6 +3144,96 @@ Important:
             });
         }
 
+        function createWorkoutsTypeChart() {
+            const ctx = document.getElementById('chart-workouts');
+            if (!ctx) return;
+
+            // Get date range based on current period
+            const today = new Date();
+            let startDate, endDate;
+
+            if (chartPeriod === 'week') {
+                const currentDay = today.getDay();
+                const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() + mondayOffset + (dataPeriodOffset * 7));
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+            } else if (chartPeriod === 'month') {
+                startDate = new Date(today.getFullYear(), today.getMonth() + dataPeriodOffset, 1);
+                endDate = new Date(today.getFullYear(), today.getMonth() + dataPeriodOffset + 1, 0);
+            } else {
+                startDate = new Date(today.getFullYear() + dataPeriodOffset, 0, 1);
+                endDate = new Date(today.getFullYear() + dataPeriodOffset, 11, 31);
+            }
+
+            // Count workouts by type
+            const workoutCounts = {};
+            Object.keys(WORKOUT_TYPES).forEach(type => {
+                workoutCounts[type] = 0;
+            });
+
+            // Iterate through all days in range
+            const current = new Date(startDate);
+            while (current <= endDate && current <= today) {
+                const workouts = loadData('workouts', current) || [];
+                workouts.forEach(w => {
+                    if (w.type && workoutCounts.hasOwnProperty(w.type)) {
+                        workoutCounts[w.type]++;
+                    }
+                });
+                current.setDate(current.getDate() + 1);
+            }
+
+            // Prepare data for chart (only show types with count > 0)
+            const labels = [];
+            const data = [];
+            Object.entries(workoutCounts).forEach(([type, count]) => {
+                if (count > 0) {
+                    labels.push(WORKOUT_TYPES[type].name);
+                    data.push(count);
+                }
+            });
+
+            if (charts['chart-workouts']) {
+                charts['chart-workouts'].destroy();
+            }
+
+            charts['chart-workouts'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: '#C23C64',
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(30, 2, 64, 0.1)' },
+                            ticks: {
+                                stepSize: 1,
+                                callback: (value) => Number.isInteger(value) ? value : ''
+                            }
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
         function updateCharts() {
             const goals = getGoals();
             createChart('chart-calories', 'calories', '#FFA7A7', 'kcal', goals.calories);
@@ -3142,8 +3241,8 @@ Important:
             createChart('chart-steps', 'steps', '#F17496', 'steps', goals.steps);
             createChart('chart-minutes', 'minutes', '#F1ACFF', 'min', goals.minutes);
             createChart('chart-weight', 'weight', '#886F8B', 'kg', goals.weight, 'line');
-            createChartWithoutGoal('chart-resting-hr', 'restingHR', '#E91E63', 'bpm', 'line');
-            createChartWithoutGoal('chart-workouts', 'workoutCount', '#FFD93D', '', 'bar');
+            createChartWithoutGoal('chart-resting-hr', 'restingHR', '#E91E63', 'bpm', 'bar');
+            createWorkoutsTypeChart();
 
             // Calculate and display averages
             updateChartAverages();
@@ -3156,10 +3255,10 @@ Important:
             const restingHRData = getChartData('restingHR');
             const workoutsData = getChartData('workoutCount');
 
-            // Calculate averages (only for days with data > 0)
+            // Calculate averages (only for days with actual data, excluding null/undefined/0)
             const calcAvg = (data) => {
-                const nonZero = data.filter(v => v > 0);
-                return nonZero.length > 0 ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : 0;
+                const validValues = data.filter(v => v !== null && v !== undefined && v > 0);
+                return validValues.length > 0 ? Math.round(validValues.reduce((a, b) => a + b, 0) / validValues.length) : 0;
             };
 
             // Calculate sum for workouts (total, not average)
