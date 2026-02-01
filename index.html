@@ -162,6 +162,51 @@
             transition: width 0.3s ease;
         }
 
+        /* Steps Streak Counter */
+        .steps-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .steps-main {
+            flex: 1;
+        }
+
+        .streak-counter {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 12px 18px;
+            background: #FFD5E0;
+            border-radius: 50px;
+            gap: 10px;
+        }
+
+        .streak-flame {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .streak-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .streak-number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #A30437;
+            line-height: 1;
+        }
+
+        .streak-label {
+            font-size: 0.6rem;
+            color: #A30437;
+            line-height: 1.2;
+        }
+
         .food .progress-fill { background: var(--text-color); }
         .steps .progress-fill { background: var(--text-color); }
         .minutes .progress-fill { background: var(--text-color); }
@@ -957,14 +1002,24 @@
                 </div>
                 <button class="btn btn-small add-btn" onclick="openModal('steps')">+ Add</button>
             </div>
-            <div class="big-number"><span id="home-steps">0</span></div>
-            <div class="sub-text">of <span id="home-steps-goal">12,000</span> steps</div>
-            <div class="progress-container" style="margin-top: 10px;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="home-steps-bar" style="width: 0%"></div>
+            <div class="steps-content">
+                <div class="steps-main">
+                    <div class="big-number"><span id="home-steps">0</span></div>
+                    <div class="sub-text">of <span id="home-steps-goal">12,000</span> steps</div>
+                    <div class="progress-container" style="margin-top: 10px;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="home-steps-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="streak-counter" id="steps-streak-container">
+                    <div class="streak-flame" id="steps-streak-emoji">🔥</div>
+                    <div class="streak-text">
+                        <div class="streak-number" id="steps-streak-number">0</div>
+                        <div class="streak-label">Day streak</div>
+                    </div>
                 </div>
             </div>
-            <div class="sub-text" id="steps-streak" style="margin-top: 8px;"></div>
         </div>
 
         <!-- Minutes Card -->
@@ -1626,11 +1681,8 @@
 
             // Update steps streak
             const stepsStreak = calculateStepsStreak(goals.steps);
-            if (stepsStreak > 0) {
-                document.getElementById('steps-streak').textContent = `🔥 ${stepsStreak} day streak!`;
-            } else {
-                document.getElementById('steps-streak').textContent = '';
-            }
+            document.getElementById('steps-streak-number').textContent = stepsStreak;
+            document.getElementById('steps-streak-emoji').textContent = stepsStreak > 0 ? '🔥' : '🥱';
 
             // Update minutes card
             document.getElementById('home-minutes').textContent = minutes;
