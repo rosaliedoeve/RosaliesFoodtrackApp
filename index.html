@@ -332,12 +332,20 @@
 
         .add-btn {
             background: rgba(255, 255, 255, 0.3);
-            border: 2px dashed rgba(30, 2, 64, 0.3);
+            border: none;
             color: var(--text-color);
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .weight .add-btn {
-            border-color: rgba(255, 255, 255, 0.5);
             color: var(--white);
         }
 
@@ -966,7 +974,7 @@
                 <div class="metric-title">
                     <span class="emoji">🍉</span> Food
                 </div>
-                <button class="btn btn-small add-btn" onclick="showPage('food')">+ Add</button>
+                <button class="btn btn-small add-btn" onclick="showPage('food')">+</button>
             </div>
             <div class="donut-charts-container">
                 <div class="donut-chart-item">
@@ -1000,7 +1008,7 @@
                 <div class="metric-title">
                     <span class="emoji">👠</span> Steps
                 </div>
-                <button class="btn btn-small add-btn" onclick="openModal('steps')">+ Add</button>
+                <button class="btn btn-small add-btn" onclick="openModal('steps')">+</button>
             </div>
             <div class="steps-content">
                 <div class="steps-main">
@@ -1028,7 +1036,7 @@
                 <div class="metric-title">
                     <span class="emoji">❤️</span> Heart Zone
                 </div>
-                <button class="btn btn-small add-btn" onclick="openModal('minutes')">+ Add</button>
+                <button class="btn btn-small add-btn" onclick="openModal('minutes')">+</button>
             </div>
             <div class="big-number"><span id="home-minutes">0</span> <span class="unit">min</span></div>
             <div class="sub-text">of <span id="home-minutes-goal">45</span> min goal</div>
@@ -1045,7 +1053,7 @@
                 <div class="metric-title">
                     <span class="emoji">🪆</span> Weight
                 </div>
-                <button class="btn btn-small add-btn" onclick="openModal('weight')">+ Add</button>
+                <button class="btn btn-small add-btn" onclick="openModal('weight')">+</button>
             </div>
             <div class="big-number"><span id="home-weight">--</span> <span class="unit">kg</span></div>
             <div class="sub-text" id="home-weight-status">Goal: <span id="home-weight-goal">53.0</span> kg</div>
