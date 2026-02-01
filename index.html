@@ -1453,7 +1453,7 @@
         ];
 
         // ==================== LOCAL STORAGE ====================
-        function getStorageKey(type, date = currentDate) {
+        function getStorageKey(type, date) {
             const dateStr = formatDateKey(date);
             return `health_${type}_${dateStr}`;
         }
@@ -1476,11 +1476,11 @@
             }
         }
 
-        function saveData(type, value, date = currentDate) {
+        function saveData(type, value, date) {
             localStorage.setItem(getStorageKey(type, date), JSON.stringify(value));
         }
 
-        function loadData(type, date = currentDate) {
+        function loadData(type, date) {
             const data = localStorage.getItem(getStorageKey(type, date));
             return data ? JSON.parse(data) : null;
         }
@@ -1545,7 +1545,9 @@
 
         // ==================== DATE NAVIGATION ====================
         function changeDate(delta) {
-            currentDate.setDate(currentDate.getDate() + delta);
+            const newDate = new Date(currentDate);
+            newDate.setDate(newDate.getDate() + delta);
+            currentDate = newDate;
             updateDateDisplays();
             updateHomeDisplay();
             updateFoodDisplay();
@@ -1594,19 +1596,23 @@
 
             // Update weight card
             document.getElementById('home-weight').textContent = weight ? weight.toFixed(1) : '--';
-            document.getElementById('home-weight-goal').textContent = goals.weight.toFixed(1);
 
             if (weight) {
                 const weightDiff = weight - goals.weight;
                 if (weightDiff <= 0) {
-                    document.getElementById('home-weight-status').innerHTML = `<span style="color: #90EE90;">✓ On track!</span> Goal: ${goals.weight.toFixed(1)} kg`;
+                    document.getElementById('home-weight-status').textContent = `✓ On track! Goal: ${goals.weight.toFixed(1)} kg`;
+                    document.getElementById('home-weight-status').style.color = '#90EE90';
                 } else {
-                    document.getElementById('home-weight-status').innerHTML = `${weightDiff.toFixed(1)} kg to go · Goal: ${goals.weight.toFixed(1)} kg`;
+                    document.getElementById('home-weight-status').textContent = `${weightDiff.toFixed(1)} kg to go · Goal: ${goals.weight.toFixed(1)} kg`;
+                    document.getElementById('home-weight-status').style.color = '';
                 }
                 // Weight progress: closer to goal = more progress (inverted)
                 const maxWeight = goals.weight + 20; // Assume max 20kg above goal
                 const progress = Math.max(0, 100 - ((weight - goals.weight) / (maxWeight - goals.weight) * 100));
                 updateProgressBar('home-weight-bar', progress, 100);
+            } else {
+                document.getElementById('home-weight-status').textContent = `Goal: ${goals.weight.toFixed(1)} kg`;
+                document.getElementById('home-weight-status').style.color = '';
             }
         }
 
@@ -1693,7 +1699,7 @@
                 return;
             }
 
-            saveData(currentModalType, value);
+            saveData(currentModalType, value, currentDate);
             closeModal();
             updateHomeDisplay();
         }
@@ -2337,57 +2343,60 @@ Important:
                     labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
                 }
             } else if (chartPeriod === 'month') {
-                // Month view: aggregate by week (with offset)
+                // Month view (with offset)
                 const targetDate = new Date(today.getFullYear(), today.getMonth() + dataPeriodOffset, 1);
                 const year = targetDate.getFullYear();
                 const month = targetDate.getMonth();
                 const firstDay = new Date(year, month, 1);
                 const lastDay = new Date(year, month + 1, 0);
 
-                // Find the Monday of the week containing the 1st
-                let weekStart = new Date(firstDay);
-                const firstDayOfWeek = firstDay.getDay();
-                const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
-                weekStart.setDate(firstDay.getDate() + mondayOffset);
+                if (type === 'weight') {
+                    // Weight: show daily data points
+                    for (let day = 1; day <= lastDay.getDate(); day++) {
+                        const date = new Date(year, month, day);
+                        const value = getDayValue(type, date);
+                        data.push(value || null);
+                        labels.push(day.toString());
+                    }
+                } else {
+                    // Other metrics: aggregate by week, show weekly averages
+                    let weekStart = new Date(firstDay);
+                    const firstDayOfWeek = firstDay.getDay();
+                    const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
+                    weekStart.setDate(firstDay.getDate() + mondayOffset);
 
-                let weekNum = 1;
-                while (weekStart <= lastDay) {
-                    let weekTotal = 0;
-                    let weekCount = 0;
-                    let hasData = false;
+                    while (weekStart <= lastDay) {
+                        let weekTotal = 0;
+                        let weekCount = 0;
+                        let hasData = false;
 
-                    for (let d = 0; d < 7; d++) {
-                        const date = new Date(weekStart);
-                        date.setDate(weekStart.getDate() + d);
+                        for (let d = 0; d < 7; d++) {
+                            const date = new Date(weekStart);
+                            date.setDate(weekStart.getDate() + d);
 
-                        // Only count days within the current month
-                        if (date.getMonth() === month) {
-                            const value = getDayValue(type, date);
-                            if (type === 'weight') {
-                                if (value) {
-                                    weekTotal += value;
-                                    weekCount++;
-                                    hasData = true;
-                                }
-                            } else {
+                            // Only count days within the current month
+                            if (date.getMonth() === month) {
+                                const value = getDayValue(type, date);
                                 weekTotal += value || 0;
                                 weekCount++;
                                 if (value > 0) hasData = true;
                             }
                         }
-                    }
 
-                    if (weekCount > 0) {
-                        if (type === 'weight') {
-                            data.push(hasData ? Math.round(weekTotal / weekCount * 10) / 10 : null);
-                        } else {
-                            data.push(Math.round(weekTotal / weekCount));
+                        if (weekCount > 0) {
+                            // Show average for the week
+                            data.push(hasData ? Math.round(weekTotal / weekCount) : 0);
+                            // Show first date of the week as label
+                            const labelDate = new Date(weekStart);
+                            if (labelDate.getMonth() < month) {
+                                labelDate.setDate(1);
+                                labelDate.setMonth(month);
+                            }
+                            labels.push(labelDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
                         }
-                        labels.push(`Week ${weekNum}`);
-                        weekNum++;
-                    }
 
-                    weekStart.setDate(weekStart.getDate() + 7);
+                        weekStart.setDate(weekStart.getDate() + 7);
+                    }
                 }
             } else if (chartPeriod === 'year') {
                 // Year view: aggregate by month (with offset)
