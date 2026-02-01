@@ -28,7 +28,7 @@
             --steps-color: #F17496;
             --minutes-color: #F1ACFF;
             --weight-color: #886F8B;
-            --workout-color: #FFD93D;
+            --workout-color: #C23C64;
             --white: #FFFFFF;
             --shadow: 0 4px 15px rgba(30, 2, 64, 0.1);
         }
@@ -118,7 +118,7 @@
         .metric-card.steps { background: var(--steps-color); }
         .metric-card.minutes { background: var(--minutes-color); }
         .metric-card.weight { background: var(--weight-color); color: var(--white); }
-        .metric-card.workout { background: var(--workout-color); }
+        .metric-card.workout { background: var(--workout-color); color: #1E0240; }
 
         .metric-header {
             display: flex;
@@ -1194,6 +1194,21 @@
             </div>
         </div>
 
+        <!-- Workout Card -->
+        <div class="metric-card workout">
+            <div class="metric-header">
+                <div class="metric-title">
+                    <span class="emoji">🏋🏽‍♀️</span> Workouts
+                </div>
+                <button class="btn btn-small add-btn" onclick="openWorkoutModal()">+</button>
+            </div>
+            <div class="big-number"><span id="home-workout-count">0</span></div>
+            <div class="sub-text">workouts today</div>
+            <div class="workout-pills" id="home-workout-pills">
+                <!-- Workout pills populated by JS -->
+            </div>
+        </div>
+
         <!-- Minutes Card -->
         <div class="metric-card minutes">
             <div class="metric-header">
@@ -1228,20 +1243,6 @@
             </div>
         </div>
 
-        <!-- Workout Card -->
-        <div class="metric-card workout">
-            <div class="metric-header">
-                <div class="metric-title">
-                    <span class="emoji">🏋🏽‍♀️</span> Workouts
-                </div>
-                <button class="btn btn-small add-btn" onclick="openWorkoutModal()">+</button>
-            </div>
-            <div class="big-number"><span id="home-workout-count">0</span></div>
-            <div class="sub-text">workouts today</div>
-            <div class="workout-pills" id="home-workout-pills">
-                <!-- Workout pills populated by JS -->
-            </div>
-        </div>
     </div>
 
     <!-- Food Page -->
@@ -1571,7 +1572,7 @@
             <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="width: 100%; margin-bottom: 10px;">Import Data</button>
             <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
             <button class="btn btn-secondary" onclick="document.getElementById('import-fitbit-file').click()" style="width: 100%; margin-bottom: 10px;">Import Fitbit CSV</button>
-            <input type="file" id="import-fitbit-file" accept=".csv" style="display: none;" onchange="importFitbitData(event)">
+            <input type="file" id="import-fitbit-file" accept="*/*" style="display: none;" onchange="importFitbitData(event)">
             <button class="btn btn-secondary" onclick="resetFoodDatabase()" style="width: 100%;">Reset food database to default</button>
         </div>
     </div>
