@@ -28,6 +28,7 @@
             --steps-color: #F17496;
             --minutes-color: #F1ACFF;
             --weight-color: #886F8B;
+            --workout-color: #FFD93D;
             --white: #FFFFFF;
             --shadow: 0 4px 15px rgba(30, 2, 64, 0.1);
         }
@@ -117,6 +118,7 @@
         .metric-card.steps { background: var(--steps-color); }
         .metric-card.minutes { background: var(--minutes-color); }
         .metric-card.weight { background: var(--weight-color); color: var(--white); }
+        .metric-card.workout { background: var(--workout-color); }
 
         .metric-header {
             display: flex;
@@ -379,56 +381,6 @@
         .form-group textarea:focus {
             outline: none;
             border-color: var(--steps-color);
-        }
-
-        /* Voice Input */
-        .voice-input-container {
-            position: relative;
-            display: flex;
-            gap: 10px;
-        }
-
-        .voice-input-container textarea {
-            flex: 1;
-            padding: 14px;
-            border: 2px solid rgba(30, 2, 64, 0.1);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .voice-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: none;
-            background: var(--steps-color);
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, background 0.2s;
-            flex-shrink: 0;
-            align-self: flex-start;
-        }
-
-        .voice-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .voice-btn.listening {
-            background: #e53935;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
         }
 
         /* Modal */
@@ -1002,6 +954,168 @@
         .page.active {
             animation: fadeIn 0.3s ease;
         }
+
+        /* Workout Grid Modal */
+        .workout-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .workout-option {
+            padding: 15px 12px;
+            border: 2px solid rgba(30, 2, 64, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .workout-option:hover,
+        .workout-option.selected {
+            border-color: var(--text-color);
+            background: rgba(30, 2, 64, 0.05);
+        }
+
+        .workout-option .workout-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .workout-option .workout-duration {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .workout-option .workout-desc {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        /* Workout Pills on Home */
+        .workout-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .workout-pill {
+            padding: 6px 12px;
+            background: rgba(30, 2, 64, 0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .workout-pill .delete-workout {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.9rem;
+            opacity: 0.6;
+            line-height: 1;
+        }
+
+        .workout-pill .delete-workout:hover {
+            opacity: 1;
+        }
+
+        /* Insights Page */
+        .insight-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .insight-card h3 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(30, 2, 64, 0.1);
+        }
+
+        .insight-stat:last-child {
+            border-bottom: none;
+        }
+
+        .insight-stat .label {
+            font-size: 0.95rem;
+        }
+
+        .insight-stat .value {
+            font-weight: 600;
+        }
+
+        .insight-stat .value.positive {
+            color: #2e7d32;
+        }
+
+        .insight-stat .value.negative {
+            color: #c62828;
+        }
+
+        .insight-summary {
+            background: var(--bg-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .correlation-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(30, 2, 64, 0.1);
+        }
+
+        .correlation-item:last-child {
+            border-bottom: none;
+        }
+
+        .correlation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .correlation-bar {
+            height: 8px;
+            background: rgba(30, 2, 64, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .correlation-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .correlation-fill.positive {
+            background: #4caf50;
+        }
+
+        .correlation-fill.negative {
+            background: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -1086,7 +1200,7 @@
                 <div class="metric-title">
                     <span class="emoji">❤️</span> Heart Zone
                 </div>
-                <button class="btn btn-small add-btn" onclick="openModal('minutes')">+</button>
+                <button class="btn btn-small add-btn" onclick="openMinutesModal()">+</button>
             </div>
             <div class="big-number"><span id="home-minutes">0</span> <span class="unit">min</span></div>
             <div class="sub-text">of <span id="home-minutes-goal">45</span> min goal</div>
@@ -1111,6 +1225,21 @@
                 <div class="progress-bar">
                     <div class="progress-fill" id="home-weight-bar" style="width: 0%"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Workout Card -->
+        <div class="metric-card workout">
+            <div class="metric-header">
+                <div class="metric-title">
+                    <span class="emoji">🏋🏽‍♀️</span> Workouts
+                </div>
+                <button class="btn btn-small add-btn" onclick="openWorkoutModal()">+</button>
+            </div>
+            <div class="big-number"><span id="home-workout-count">0</span></div>
+            <div class="sub-text">workouts today</div>
+            <div class="workout-pills" id="home-workout-pills">
+                <!-- Workout pills populated by JS -->
             </div>
         </div>
     </div>
@@ -1188,12 +1317,7 @@
         <div id="food-tab-ai" class="food-entry-section">
             <div class="form-group">
                 <label>Describe your meal</label>
-                <div class="voice-input-container">
-                    <textarea id="ai-meal-description" rows="3" placeholder="e.g., I had a bowl of oatmeal with a banana, some blueberries, and a tablespoon of peanut butter"></textarea>
-                    <button type="button" class="voice-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Speak your meal">
-                        🎤
-                    </button>
-                </div>
+                <textarea id="ai-meal-description" rows="3" placeholder="e.g., I had a bowl of oatmeal with a banana, some blueberries, and a tablespoon of peanut butter" style="padding: 14px; border: 2px solid rgba(30, 2, 64, 0.1); border-radius: 12px; font-size: 1rem; font-family: inherit; resize: vertical; min-height: 80px; width: 100%; box-sizing: border-box;"></textarea>
             </div>
             <button class="btn btn-primary" onclick="analyzeMeal()" style="width: 100%;" id="analyze-btn">
                 <span id="analyze-btn-text">Analyze Meal</span>
@@ -1287,6 +1411,66 @@
             </div>
             <div class="chart-wrapper">
                 <canvas id="chart-minutes"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>💓 Resting Heart Rate</h3>
+                <span class="chart-avg" id="avg-resting-hr"></span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="chart-resting-hr"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>🏋🏽‍♀️ Workouts</h3>
+                <span class="chart-avg" id="avg-workouts"></span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="chart-workouts"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights Page -->
+    <div id="page-insights" class="page">
+        <div class="insight-card">
+            <h3>📊 Weight Progress</h3>
+            <div class="insight-stat">
+                <span class="label">Starting weight (Dec 13)</span>
+                <span class="value" id="insight-start-weight">--</span>
+            </div>
+            <div class="insight-stat">
+                <span class="label">Current weight</span>
+                <span class="value" id="insight-current-weight">--</span>
+            </div>
+            <div class="insight-stat">
+                <span class="label">Total change</span>
+                <span class="value" id="insight-weight-change">--</span>
+            </div>
+            <div class="insight-stat">
+                <span class="label">Weekly average change</span>
+                <span class="value" id="insight-weekly-change">--</span>
+            </div>
+        </div>
+
+        <div class="insight-card">
+            <h3>🔗 Correlations with Weight Loss</h3>
+            <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 15px;">
+                What tends to happen on weeks when you lose weight?
+            </p>
+            <div id="correlation-results">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <div class="insight-card">
+            <h3>💡 Key Insights</h3>
+            <div id="key-insights">
+                <!-- Populated by JS -->
             </div>
         </div>
     </div>
@@ -1386,6 +1570,8 @@
             <button class="btn btn-secondary" onclick="exportData()" style="width: 100%; margin-bottom: 10px;">Export All Data</button>
             <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()" style="width: 100%; margin-bottom: 10px;">Import Data</button>
             <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('import-fitbit-file').click()" style="width: 100%; margin-bottom: 10px;">Import Fitbit CSV</button>
+            <input type="file" id="import-fitbit-file" accept=".csv" style="display: none;" onchange="importFitbitData(event)">
             <button class="btn btn-secondary" onclick="resetFoodDatabase()" style="width: 100%;">Reset food database to default</button>
         </div>
     </div>
@@ -1403,6 +1589,10 @@
         <div class="nav-item" onclick="showPage('data')">
             🧮
             <span>Charts</span>
+        </div>
+        <div class="nav-item" onclick="showPage('insights')">
+            💡
+            <span>Insights</span>
         </div>
         <div class="nav-item" onclick="showPage('settings')">
             🧬
@@ -1450,6 +1640,39 @@
                 <input type="number" id="edit-preset-protein">
             </div>
             <button class="btn btn-primary" onclick="savePresetEdit()" style="width: 100%;">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Modal for Heart Zone Minutes + Resting HR -->
+    <div class="modal-overlay" id="minutes-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add Heart Zone Data</h2>
+                <button class="modal-close" onclick="closeMinutesModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label>Heart Zone Minutes</label>
+                <input type="number" id="minutes-input" placeholder="0" step="1">
+            </div>
+            <div class="form-group">
+                <label>Resting Heart Rate (optional)</label>
+                <input type="number" id="resting-hr-input" placeholder="e.g., 52" step="1">
+            </div>
+            <button class="btn btn-primary" onclick="saveMinutesEntry()" style="width: 100%;">Save</button>
+        </div>
+    </div>
+
+    <!-- Modal for Workout Selection -->
+    <div class="modal-overlay" id="workout-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Log Workout</h2>
+                <button class="modal-close" onclick="closeWorkoutModal()">×</button>
+            </div>
+            <div class="workout-grid" id="workout-grid">
+                <!-- Populated by JS -->
+            </div>
+            <button class="btn btn-primary" onclick="saveWorkout()" style="width: 100%; margin-top: 15px;" id="save-workout-btn" disabled>Log Workout</button>
         </div>
     </div>
 
@@ -1608,6 +1831,36 @@
             return data ? JSON.parse(data) : null;
         }
 
+        // Minutes data helpers (handles migration from old number format to new object format)
+        function getMinutesData(date) {
+            const raw = loadData('minutes', date);
+            if (raw === null) return { minutes: 0, restingHR: null };
+            if (typeof raw === 'number') {
+                // Old format - return as object
+                return { minutes: raw, restingHR: null };
+            }
+            return raw;
+        }
+
+        function saveMinutesData(date, minutes, restingHR) {
+            const data = { minutes: minutes || 0, restingHR: restingHR || null };
+            saveData('minutes', data, date);
+        }
+
+        // Workout type definitions
+        const WORKOUT_TYPES = {
+            shred: { name: "Shred", duration: 50, description: "HIIT (treadmill + strength)" },
+            build: { name: "Build", duration: 50, description: "Strength (heavy)" },
+            sculpt: { name: "Sculpt", duration: 50, description: "Pilates (heated, core-focused)" },
+            hyrox: { name: "Hyrox", duration: 50, description: "HIIT (cardio + strength)" },
+            booty: { name: "Booty", duration: 50, description: "Cardio + glutes (stairmaster + strength)" },
+            openGymRunning: { name: "Open gym running", duration: 25, description: "Treadmill intervals" },
+            openGymStrength: { name: "Open gym strength", duration: 30, description: "Strength + core" },
+            hike: { name: "Hike", duration: 240, description: "Hiking in mountains" }
+        };
+
+        let selectedWorkoutType = null;
+
         function getGoals() {
             const saved = localStorage.getItem('health_goals');
             return saved ? JSON.parse(saved) : { ...defaultGoals };
@@ -1680,10 +1933,10 @@
 
             // Show selected page
             document.getElementById(`page-${pageName}`).classList.add('active');
-            document.querySelectorAll('.nav-item')[['home', 'food', 'data', 'settings'].indexOf(pageName)].classList.add('active');
+            document.querySelectorAll('.nav-item')[['home', 'food', 'data', 'insights', 'settings'].indexOf(pageName)].classList.add('active');
 
             // Update title
-            const titles = { home: 'Home', food: 'Food Tracking', data: 'Your Data', settings: 'Settings' };
+            const titles = { home: 'Home', food: 'Food Tracking', data: 'Your Data', insights: 'Insights', settings: 'Settings' };
             document.getElementById('page-title').textContent = titles[pageName];
 
             // Update displays
@@ -1693,6 +1946,7 @@
                 updateDataPeriodDisplay();
                 updateCharts();
             }
+            if (pageName === 'insights') updateInsightsPage();
             if (pageName === 'settings') loadGoalsToForm();
         }
 
@@ -1717,8 +1971,9 @@
             const goals = getGoals();
             const foods = loadData('foods', currentDate) || [];
             const steps = loadData('steps', currentDate) || 0;
-            const minutes = loadData('minutes', currentDate) || 0;
+            const minutesData = getMinutesData(currentDate);
             const weight = loadData('weight', currentDate);
+            const workouts = loadData('workouts', currentDate) || [];
 
             // Calculate food totals
             const totalCalories = foods.reduce((sum, f) => sum + f.calories, 0);
@@ -1748,9 +2003,9 @@
             document.getElementById('steps-streak-emoji').textContent = stepsStreak > 0 ? '🔥' : '🥱';
 
             // Update minutes card
-            document.getElementById('home-minutes').textContent = minutes;
+            document.getElementById('home-minutes').textContent = minutesData.minutes;
             document.getElementById('home-minutes-goal').textContent = goals.minutes;
-            updateProgressBar('home-minutes-bar', minutes, goals.minutes);
+            updateProgressBar('home-minutes-bar', minutesData.minutes, goals.minutes);
 
             // Update weight card
             document.getElementById('home-weight').textContent = weight ? weight.toFixed(1) : '--';
@@ -1771,6 +2026,20 @@
             } else {
                 document.getElementById('home-weight-status').textContent = `Goal: ${goals.weight.toFixed(1)} kg`;
                 document.getElementById('home-weight-status').style.color = '';
+            }
+
+            // Update workout card
+            document.getElementById('home-workout-count').textContent = workouts.length;
+            const pillsContainer = document.getElementById('home-workout-pills');
+            if (workouts.length === 0) {
+                pillsContainer.innerHTML = '<div class="sub-text" style="margin-top: 5px;">No workouts logged</div>';
+            } else {
+                pillsContainer.innerHTML = workouts.map((w, i) => `
+                    <div class="workout-pill">
+                        ${w.name}
+                        <button class="delete-workout" onclick="deleteWorkout(${i})">×</button>
+                    </div>
+                `).join('');
             }
         }
 
@@ -1859,6 +2128,85 @@
 
             saveData(currentModalType, value, currentDate);
             closeModal();
+            updateHomeDisplay();
+        }
+
+        // ==================== MINUTES MODAL ====================
+        function openMinutesModal() {
+            const data = getMinutesData(currentDate);
+            document.getElementById('minutes-input').value = data.minutes || '';
+            document.getElementById('resting-hr-input').value = data.restingHR || '';
+            document.getElementById('minutes-modal-overlay').classList.add('active');
+            document.getElementById('minutes-input').focus();
+        }
+
+        function closeMinutesModal() {
+            document.getElementById('minutes-modal-overlay').classList.remove('active');
+        }
+
+        function saveMinutesEntry() {
+            const minutes = parseInt(document.getElementById('minutes-input').value) || 0;
+            const restingHR = parseInt(document.getElementById('resting-hr-input').value) || null;
+
+            saveMinutesData(currentDate, minutes, restingHR);
+            closeMinutesModal();
+            updateHomeDisplay();
+        }
+
+        // ==================== WORKOUT MODAL ====================
+        function openWorkoutModal() {
+            selectedWorkoutType = null;
+            renderWorkoutGrid();
+            document.getElementById('workout-modal-overlay').classList.add('active');
+            document.getElementById('save-workout-btn').disabled = true;
+        }
+
+        function closeWorkoutModal() {
+            document.getElementById('workout-modal-overlay').classList.remove('active');
+            selectedWorkoutType = null;
+        }
+
+        function renderWorkoutGrid() {
+            const grid = document.getElementById('workout-grid');
+            grid.innerHTML = Object.entries(WORKOUT_TYPES).map(([key, workout]) => `
+                <div class="workout-option" data-type="${key}" onclick="selectWorkout('${key}')">
+                    <div class="workout-name">${workout.name}</div>
+                    <div class="workout-duration">${workout.duration} min</div>
+                    <div class="workout-desc">${workout.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectWorkout(type) {
+            selectedWorkoutType = type;
+            document.querySelectorAll('.workout-option').forEach(el => {
+                el.classList.toggle('selected', el.dataset.type === type);
+            });
+            document.getElementById('save-workout-btn').disabled = false;
+        }
+
+        function saveWorkout() {
+            if (!selectedWorkoutType) return;
+
+            const workouts = loadData('workouts', currentDate) || [];
+            const workoutType = WORKOUT_TYPES[selectedWorkoutType];
+
+            workouts.push({
+                type: selectedWorkoutType,
+                name: workoutType.name,
+                duration: workoutType.duration,
+                timestamp: Date.now()
+            });
+
+            saveData('workouts', workouts, currentDate);
+            closeWorkoutModal();
+            updateHomeDisplay();
+        }
+
+        function deleteWorkout(index) {
+            const workouts = loadData('workouts', currentDate) || [];
+            workouts.splice(index, 1);
+            saveData('workouts', workouts, currentDate);
             updateHomeDisplay();
         }
 
@@ -2210,94 +2558,6 @@
             if (analyzeBtn) analyzeBtn.disabled = !hasKey;
         }
 
-        // ==================== VOICE INPUT ====================
-        let recognition = null;
-        let isListening = false;
-
-        function initVoiceRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-            if (!SpeechRecognition) {
-                // Hide voice button if not supported
-                const voiceBtn = document.getElementById('voice-btn');
-                if (voiceBtn) voiceBtn.style.display = 'none';
-                return;
-            }
-
-            recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-
-            recognition.onresult = (event) => {
-                let finalTranscript = '';
-                let interimTranscript = '';
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript;
-                    } else {
-                        interimTranscript += transcript;
-                    }
-                }
-
-                const textarea = document.getElementById('ai-meal-description');
-                if (finalTranscript) {
-                    textarea.value += finalTranscript;
-                }
-            };
-
-            recognition.onerror = (event) => {
-                console.log('Speech recognition error:', event.error);
-                stopVoiceInput();
-                if (event.error === 'not-allowed') {
-                    alert('Microphone access denied. Please allow microphone access to use voice input.');
-                }
-            };
-
-            recognition.onend = () => {
-                if (isListening) {
-                    // Restart if still supposed to be listening
-                    recognition.start();
-                }
-            };
-        }
-
-        function toggleVoiceInput() {
-            if (!recognition) {
-                initVoiceRecognition();
-                if (!recognition) {
-                    alert('Voice input is not supported in this browser.');
-                    return;
-                }
-            }
-
-            if (isListening) {
-                stopVoiceInput();
-            } else {
-                startVoiceInput();
-            }
-        }
-
-        function startVoiceInput() {
-            const voiceBtn = document.getElementById('voice-btn');
-            isListening = true;
-            voiceBtn.classList.add('listening');
-            voiceBtn.textContent = '⏹';
-            recognition.start();
-        }
-
-        function stopVoiceInput() {
-            const voiceBtn = document.getElementById('voice-btn');
-            isListening = false;
-            voiceBtn.classList.remove('listening');
-            voiceBtn.textContent = '🎤';
-            if (recognition) {
-                recognition.stop();
-            }
-        }
-
         async function analyzeMeal() {
             const description = document.getElementById('ai-meal-description').value.trim();
             if (!description) {
@@ -2556,6 +2816,15 @@ Important:
                 const foods = loadData('foods', date) || [];
                 if (type === 'calories') value = foods.reduce((sum, f) => sum + f.calories, 0);
                 else value = foods.reduce((sum, f) => sum + f.protein, 0);
+            } else if (type === 'minutes') {
+                const data = getMinutesData(date);
+                value = data.minutes;
+            } else if (type === 'restingHR') {
+                const data = getMinutesData(date);
+                value = data.restingHR;
+            } else if (type === 'workoutCount') {
+                const workouts = loadData('workouts', date) || [];
+                value = workouts.length;
             } else {
                 value = loadData(type, date);
             }
@@ -2797,6 +3066,74 @@ Important:
             });
         }
 
+        function createChartWithoutGoal(canvasId, type, color, unit, chartType = 'bar') {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+
+            const chartData = getChartData(type);
+
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+
+            // Configure main dataset based on chart type
+            const mainDataset = chartType === 'line' ? {
+                label: unit,
+                data: chartData.data,
+                borderColor: color,
+                backgroundColor: color + '33',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: color,
+                spanGaps: true
+            } : {
+                label: unit,
+                data: chartData.data,
+                backgroundColor: color,
+                borderRadius: 8,
+                borderSkipped: false
+            };
+
+            charts[canvasId] = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: chartData.labels,
+                    datasets: [mainDataset]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.parsed.y} ${unit}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: chartType !== 'line',
+                            grid: { color: 'rgba(30, 2, 64, 0.1)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 0,
+                                callback: function(value, index, ticks) {
+                                    const label = this.getLabelForValue(value);
+                                    return label || null;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         function updateCharts() {
             const goals = getGoals();
             createChart('chart-calories', 'calories', '#FFA7A7', 'kcal', goals.calories);
@@ -2804,6 +3141,8 @@ Important:
             createChart('chart-steps', 'steps', '#F17496', 'steps', goals.steps);
             createChart('chart-minutes', 'minutes', '#F1ACFF', 'min', goals.minutes);
             createChart('chart-weight', 'weight', '#886F8B', 'kg', goals.weight, 'line');
+            createChartWithoutGoal('chart-resting-hr', 'restingHR', '#E91E63', 'bpm', 'line');
+            createChartWithoutGoal('chart-workouts', 'workoutCount', '#FFD93D', '', 'bar');
 
             // Calculate and display averages
             updateChartAverages();
@@ -2813,6 +3152,8 @@ Important:
             const caloriesData = getChartData('calories');
             const stepsData = getChartData('steps');
             const minutesData = getChartData('minutes');
+            const restingHRData = getChartData('restingHR');
+            const workoutsData = getChartData('workoutCount');
 
             // Calculate averages (only for days with data > 0)
             const calcAvg = (data) => {
@@ -2820,13 +3161,239 @@ Important:
                 return nonZero.length > 0 ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : 0;
             };
 
+            // Calculate sum for workouts (total, not average)
+            const calcSum = (data) => {
+                return data.reduce((a, b) => a + b, 0);
+            };
+
             const avgCalories = calcAvg(caloriesData.data);
             const avgSteps = calcAvg(stepsData.data);
             const avgMinutes = calcAvg(minutesData.data);
+            const avgRestingHR = calcAvg(restingHRData.data);
+            const totalWorkouts = calcSum(workoutsData.data);
 
             document.getElementById('avg-calories').textContent = avgCalories > 0 ? `🌀 ${avgCalories.toLocaleString()} kcal` : '';
             document.getElementById('avg-steps').textContent = avgSteps > 0 ? `🌀 ${avgSteps.toLocaleString()}` : '';
             document.getElementById('avg-minutes').textContent = avgMinutes > 0 ? `🌀 ${avgMinutes} min` : '';
+            document.getElementById('avg-resting-hr').textContent = avgRestingHR > 0 ? `🌀 ${avgRestingHR} bpm` : '';
+            document.getElementById('avg-workouts').textContent = totalWorkouts > 0 ? `🌀 ${totalWorkouts} total` : '';
+        }
+
+        // ==================== INSIGHTS ====================
+        function calculateWeeklyData() {
+            const startDate = new Date('2025-12-13'); // When weight tracking started
+            const today = new Date();
+            const weeklyData = [];
+
+            let currentWeekStart = new Date(startDate);
+            // Align to Monday
+            const dayOfWeek = currentWeekStart.getDay();
+            const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            currentWeekStart.setDate(currentWeekStart.getDate() + daysToMonday);
+
+            while (currentWeekStart < today) {
+                const weekEnd = new Date(currentWeekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+
+                const weekData = {
+                    startDate: new Date(currentWeekStart),
+                    endDate: weekEnd,
+                    weights: [],
+                    calories: [],
+                    protein: [],
+                    steps: [],
+                    minutes: [],
+                    restingHR: [],
+                    workouts: []
+                };
+
+                // Collect daily data for this week
+                for (let d = 0; d < 7; d++) {
+                    const date = new Date(currentWeekStart);
+                    date.setDate(date.getDate() + d);
+                    if (date > today) break;
+
+                    const weight = loadData('weight', date);
+                    if (weight) weekData.weights.push(weight);
+
+                    const foods = loadData('foods', date) || [];
+                    const dailyCals = foods.reduce((sum, f) => sum + f.calories, 0);
+                    const dailyProtein = foods.reduce((sum, f) => sum + f.protein, 0);
+                    if (dailyCals > 0) weekData.calories.push(dailyCals);
+                    if (dailyProtein > 0) weekData.protein.push(dailyProtein);
+
+                    const steps = loadData('steps', date);
+                    if (steps) weekData.steps.push(steps);
+
+                    const minutesData = getMinutesData(date);
+                    if (minutesData.minutes > 0) weekData.minutes.push(minutesData.minutes);
+                    if (minutesData.restingHR) weekData.restingHR.push(minutesData.restingHR);
+
+                    const workouts = loadData('workouts', date) || [];
+                    weekData.workouts.push(workouts.length);
+                }
+
+                // Calculate weekly averages
+                const avg = arr => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+                const sum = arr => arr.reduce((a, b) => a + b, 0);
+
+                weekData.avgWeight = avg(weekData.weights);
+                weekData.avgCalories = avg(weekData.calories);
+                weekData.avgProtein = avg(weekData.protein);
+                weekData.avgSteps = avg(weekData.steps);
+                weekData.avgMinutes = avg(weekData.minutes);
+                weekData.avgRestingHR = avg(weekData.restingHR);
+                weekData.totalWorkouts = sum(weekData.workouts);
+
+                if (weekData.avgWeight !== null) {
+                    weeklyData.push(weekData);
+                }
+
+                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            }
+
+            return weeklyData;
+        }
+
+        function calculateCorrelations(weeklyData) {
+            if (weeklyData.length < 3) return null;
+
+            const correlations = {};
+            const metrics = ['avgCalories', 'avgProtein', 'avgSteps', 'avgMinutes', 'totalWorkouts'];
+
+            // Calculate week-over-week weight changes
+            const weightChanges = [];
+            for (let i = 1; i < weeklyData.length; i++) {
+                if (weeklyData[i].avgWeight && weeklyData[i-1].avgWeight) {
+                    weightChanges.push({
+                        change: weeklyData[i].avgWeight - weeklyData[i-1].avgWeight,
+                        week: weeklyData[i-1]
+                    });
+                }
+            }
+
+            metrics.forEach(metric => {
+                const lossWeeks = weightChanges.filter(w => w.change < 0 && w.week[metric] !== null);
+                const gainWeeks = weightChanges.filter(w => w.change > 0 && w.week[metric] !== null);
+
+                if (lossWeeks.length > 0 && gainWeeks.length > 0) {
+                    const avgOnLoss = lossWeeks.reduce((sum, w) => sum + w.week[metric], 0) / lossWeeks.length;
+                    const avgOnGain = gainWeeks.reduce((sum, w) => sum + w.week[metric], 0) / gainWeeks.length;
+
+                    correlations[metric] = {
+                        avgOnLoss: Math.round(avgOnLoss),
+                        avgOnGain: Math.round(avgOnGain),
+                        difference: avgOnLoss - avgOnGain,
+                        percentDiff: avgOnGain !== 0 ? ((avgOnLoss - avgOnGain) / avgOnGain * 100).toFixed(1) : 0
+                    };
+                }
+            });
+
+            return correlations;
+        }
+
+        function updateInsightsPage() {
+            const weeklyData = calculateWeeklyData();
+
+            // Weight progress
+            if (weeklyData.length > 0) {
+                const firstWeight = weeklyData[0].avgWeight;
+                const lastWeight = weeklyData[weeklyData.length - 1].avgWeight;
+                const totalChange = lastWeight - firstWeight;
+                const weeksElapsed = weeklyData.length;
+                const weeklyChange = totalChange / weeksElapsed;
+
+                document.getElementById('insight-start-weight').textContent = `${firstWeight.toFixed(1)} kg`;
+                document.getElementById('insight-current-weight').textContent = `${lastWeight.toFixed(1)} kg`;
+
+                const changeEl = document.getElementById('insight-weight-change');
+                changeEl.textContent = `${totalChange > 0 ? '+' : ''}${totalChange.toFixed(1)} kg`;
+                changeEl.className = `value ${totalChange <= 0 ? 'positive' : 'negative'}`;
+
+                const weeklyEl = document.getElementById('insight-weekly-change');
+                weeklyEl.textContent = `${weeklyChange > 0 ? '+' : ''}${weeklyChange.toFixed(2)} kg/week`;
+                weeklyEl.className = `value ${weeklyChange <= 0 ? 'positive' : 'negative'}`;
+            } else {
+                document.getElementById('insight-start-weight').textContent = '--';
+                document.getElementById('insight-current-weight').textContent = '--';
+                document.getElementById('insight-weight-change').textContent = '--';
+                document.getElementById('insight-weekly-change').textContent = '--';
+            }
+
+            // Correlations
+            const correlations = calculateCorrelations(weeklyData);
+            const correlationContainer = document.getElementById('correlation-results');
+
+            if (!correlations || Object.keys(correlations).length === 0) {
+                correlationContainer.innerHTML = '<p style="opacity: 0.6;">Not enough data yet. Keep tracking for insights!</p>';
+            } else {
+                const metricLabels = {
+                    avgCalories: { name: 'Avg daily calories', unit: 'kcal', lowerIsBetter: true },
+                    avgProtein: { name: 'Avg daily protein', unit: 'g', lowerIsBetter: false },
+                    avgSteps: { name: 'Avg daily steps', unit: '', lowerIsBetter: false },
+                    avgMinutes: { name: 'Avg heart zone minutes', unit: 'min', lowerIsBetter: false },
+                    totalWorkouts: { name: 'Weekly workouts', unit: '', lowerIsBetter: false }
+                };
+
+                correlationContainer.innerHTML = Object.entries(correlations)
+                    .map(([metric, data]) => {
+                        const label = metricLabels[metric];
+                        const isPositive = label.lowerIsBetter ? data.difference < 0 : data.difference > 0;
+
+                        return `
+                            <div class="correlation-item">
+                                <div class="correlation-header">
+                                    <span class="label">${label.name}</span>
+                                    <span class="value ${isPositive ? 'positive' : ''}">${data.percentDiff > 0 ? '+' : ''}${data.percentDiff}%</span>
+                                </div>
+                                <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 8px;">
+                                    Loss weeks: ${data.avgOnLoss.toLocaleString()}${label.unit} · Gain weeks: ${data.avgOnGain.toLocaleString()}${label.unit}
+                                </div>
+                                <div class="correlation-bar">
+                                    <div class="correlation-fill ${isPositive ? 'positive' : 'negative'}" style="width: ${Math.min(Math.abs(data.percentDiff), 50)}%;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+            }
+
+            // Generate text insights
+            generateTextInsights(correlations, weeklyData);
+        }
+
+        function generateTextInsights(correlations, weeklyData) {
+            const insightsContainer = document.getElementById('key-insights');
+            const insights = [];
+
+            if (correlations) {
+                if (correlations.avgSteps && correlations.avgSteps.difference > 500) {
+                    insights.push(`📍 When you average <strong>${correlations.avgSteps.avgOnLoss.toLocaleString()} steps</strong> (vs ${correlations.avgSteps.avgOnGain.toLocaleString()}), you tend to lose weight that week.`);
+                }
+
+                if (correlations.avgCalories && correlations.avgCalories.difference < -100) {
+                    insights.push(`🍽️ Weeks where you average <strong>${correlations.avgCalories.avgOnLoss.toLocaleString()} kcal</strong> tend to result in weight loss.`);
+                }
+
+                if (correlations.avgProtein && correlations.avgProtein.difference > 5) {
+                    insights.push(`🥩 Higher protein intake (<strong>${correlations.avgProtein.avgOnLoss}g</strong> vs ${correlations.avgProtein.avgOnGain}g) correlates with weight loss weeks.`);
+                }
+
+                if (correlations.totalWorkouts && correlations.totalWorkouts.avgOnLoss > correlations.totalWorkouts.avgOnGain) {
+                    insights.push(`🏋🏽‍♀️ You lose weight in weeks with <strong>${correlations.totalWorkouts.avgOnLoss} workouts</strong> vs ${correlations.totalWorkouts.avgOnGain} workouts.`);
+                }
+
+                if (correlations.avgMinutes && correlations.avgMinutes.difference > 5) {
+                    insights.push(`❤️ More heart zone minutes (<strong>${correlations.avgMinutes.avgOnLoss} min</strong> vs ${correlations.avgMinutes.avgOnGain} min) correlates with weight loss.`);
+                }
+            }
+
+            if (insights.length === 0) {
+                insights.push('Keep tracking to see personalized insights about what works for your weight loss goals!');
+            }
+
+            insightsContainer.innerHTML = insights.map(insight => `
+                <div class="insight-summary">${insight}</div>
+            `).join('');
         }
 
         // ==================== SETTINGS ====================
@@ -2864,9 +3431,10 @@ Important:
                 const steps = loadData('steps', date);
                 const minutes = loadData('minutes', date);
                 const weight = loadData('weight', date);
+                const workouts = loadData('workouts', date);
 
-                if (foods || steps || minutes || weight) {
-                    data.entries[dateKey] = { foods, steps, minutes, weight };
+                if (foods || steps || minutes || weight || workouts) {
+                    data.entries[dateKey] = { foods, steps, minutes, weight, workouts };
                 }
             }
 
@@ -2902,6 +3470,7 @@ Important:
                             if (entry.steps) localStorage.setItem(`health_steps_${dateKey}`, JSON.stringify(entry.steps));
                             if (entry.minutes) localStorage.setItem(`health_minutes_${dateKey}`, JSON.stringify(entry.minutes));
                             if (entry.weight) localStorage.setItem(`health_weight_${dateKey}`, JSON.stringify(entry.weight));
+                            if (entry.workouts) localStorage.setItem(`health_workouts_${dateKey}`, JSON.stringify(entry.workouts));
                         });
                     }
 
@@ -2914,12 +3483,96 @@ Important:
             reader.readAsText(file);
         }
 
+        function importFitbitData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const lines = e.target.result.split('\n');
+                    let importedCount = 0;
+
+                    // Skip header row
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+
+                        // Parse CSV (semicolon separated)
+                        const parts = line.split(';');
+                        if (parts.length < 2) continue;
+
+                        const [dateStr, stepsStr, minutesStr, restingHRStr, workoutStr] = parts;
+
+                        // Convert DD/MM/YYYY to YYYY-MM-DD
+                        const dateParts = dateStr.split('/');
+                        if (dateParts.length !== 3) continue;
+                        const dateKey = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+
+                        // Parse values (empty = null/skip)
+                        const steps = stepsStr ? parseInt(stepsStr) : null;
+                        const minutes = minutesStr ? parseInt(minutesStr) : null;
+                        const restingHR = restingHRStr ? parseInt(restingHRStr) : null;
+                        const workoutName = workoutStr ? workoutStr.trim() : null;
+
+                        // Save steps
+                        if (steps && steps > 0) {
+                            localStorage.setItem(`health_steps_${dateKey}`, JSON.stringify(steps));
+                        }
+
+                        // Save minutes and resting HR (new format)
+                        if (minutes || restingHR) {
+                            const minutesData = { minutes: minutes || 0, restingHR: restingHR };
+                            localStorage.setItem(`health_minutes_${dateKey}`, JSON.stringify(minutesData));
+                        }
+
+                        // Save workout
+                        if (workoutName) {
+                            // Map workout name to type
+                            const workoutTypeMap = {
+                                'Shred': 'shred',
+                                'Build': 'build',
+                                'Sculpt': 'sculpt',
+                                'Hyrox': 'hyrox',
+                                'Booty': 'booty',
+                                'Open gym running': 'openGymRunning',
+                                'Open gym strength': 'openGymStrength',
+                                'Hike': 'hike'
+                            };
+                            const workoutType = workoutTypeMap[workoutName];
+                            if (workoutType && WORKOUT_TYPES[workoutType]) {
+                                const workout = {
+                                    type: workoutType,
+                                    name: WORKOUT_TYPES[workoutType].name,
+                                    duration: WORKOUT_TYPES[workoutType].duration,
+                                    timestamp: new Date(dateKey).getTime()
+                                };
+                                // Get existing workouts for this day or create new array
+                                const existingKey = `health_workouts_${dateKey}`;
+                                const existing = localStorage.getItem(existingKey);
+                                const workouts = existing ? JSON.parse(existing) : [];
+                                workouts.push(workout);
+                                localStorage.setItem(existingKey, JSON.stringify(workouts));
+                            }
+                        }
+
+                        importedCount++;
+                    }
+
+                    alert(`Fitbit data imported successfully! ${importedCount} days processed.`);
+                    location.reload();
+                } catch (err) {
+                    alert('Error importing Fitbit data: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
         // ==================== INITIALIZATION ====================
         function init() {
             updateDateDisplays();
             loadGoalsToForm();
             updateHomeDisplay();
-            initVoiceRecognition();
         }
 
         // Close modal on overlay click
