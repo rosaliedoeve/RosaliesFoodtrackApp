@@ -3575,6 +3575,13 @@ Important:
                     alert('Error importing Fitbit data: ' + err.message);
                 }
             };
+            reader.onerror = () => {
+                alert('Error reading file: ' + reader.error);
+            };
+            reader.onprogress = (e) => {
+                console.log('Reading progress:', e.loaded);
+            };
+            alert('Starting to read file...');
             reader.readAsText(file);
         }
 
