@@ -3474,16 +3474,17 @@ Important:
                     weekData.workouts.push(workouts.length);
                 }
 
-                // Calculate weekly averages (only if enough data points - at least 3 days)
-                const minDays = 3;
-                const avg = arr => arr.length >= minDays ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+                // Calculate weekly averages
+                // For auto-tracked data (steps, minutes), require 3+ days for reliable average
+                // For manually logged data (food), accept any logged days
+                const avg = (arr, minDays = 1) => arr.length >= minDays ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
                 const sum = arr => arr.reduce((a, b) => a + b, 0);
 
                 weekData.avgWeight = weekData.weights.length > 0 ? weekData.weights.reduce((a, b) => a + b, 0) / weekData.weights.length : null;
-                weekData.avgCalories = avg(weekData.calories);
-                weekData.avgProtein = avg(weekData.protein);
-                weekData.avgSteps = avg(weekData.steps);
-                weekData.avgMinutes = avg(weekData.minutes);
+                weekData.avgCalories = avg(weekData.calories, 1);  // Any logged food counts
+                weekData.avgProtein = avg(weekData.protein, 1);    // Any logged food counts
+                weekData.avgSteps = avg(weekData.steps, 3);        // Need 3+ days for reliable step average
+                weekData.avgMinutes = avg(weekData.minutes, 3);    // Need 3+ days for reliable minutes average
                 weekData.avgRestingHR = avg(weekData.restingHR);
                 weekData.totalWorkouts = sum(weekData.workouts);
 
@@ -3540,32 +3541,41 @@ Important:
                 const bestWeeksWithMetric = bestWeeks.filter(w => w.week[metric.key] !== null && w.week[metric.key] !== undefined);
                 const otherWeeksWithMetric = otherWeeks.filter(w => w.week[metric.key] !== null && w.week[metric.key] !== undefined);
 
-                if (bestWeeksWithMetric.length > 0 && otherWeeksWithMetric.length > 0) {
-                    const avgOnBest = bestWeeksWithMetric.reduce((sum, w) => sum + w.week[metric.key], 0) / bestWeeksWithMetric.length;
-                    const avgOnOther = otherWeeksWithMetric.reduce((sum, w) => sum + w.week[metric.key], 0) / otherWeeksWithMetric.length;
+                // Include metric if we have data from at least one group
+                const hasBestData = bestWeeksWithMetric.length > 0;
+                const hasOtherData = otherWeeksWithMetric.length > 0;
+                const hasComparison = hasBestData && hasOtherData;
 
-                    const difference = avgOnBest - avgOnOther;
-                    const percentDiff = avgOnOther !== 0 ? ((avgOnBest - avgOnOther) / avgOnOther * 100) : 0;
+                if (hasBestData || hasOtherData) {
+                    const avgOnBest = hasBestData ? bestWeeksWithMetric.reduce((sum, w) => sum + w.week[metric.key], 0) / bestWeeksWithMetric.length : null;
+                    const avgOnOther = hasOtherData ? otherWeeksWithMetric.reduce((sum, w) => sum + w.week[metric.key], 0) / otherWeeksWithMetric.length : null;
 
-                    // Calculate impact score (normalized difference)
-                    // For "lower is better" metrics (calories), flip the sign
-                    const impactDirection = metric.lowerIsBetter ? -1 : 1;
-                    const impactScore = Math.abs(percentDiff) * impactDirection * Math.sign(difference);
+                    let difference = 0;
+                    let percentDiff = 0;
+                    let isPositiveCorrelation = null;
+
+                    if (hasComparison) {
+                        difference = avgOnBest - avgOnOther;
+                        percentDiff = avgOnOther !== 0 ? ((avgOnBest - avgOnOther) / avgOnOther * 100) : 0;
+                        isPositiveCorrelation = metric.lowerIsBetter ? difference < 0 : difference > 0;
+                    }
 
                     correlations.push({
                         ...metric,
-                        avgOnBest: Math.round(avgOnBest),
-                        avgOnOther: Math.round(avgOnOther),
+                        avgOnBest: avgOnBest !== null ? Math.round(avgOnBest) : null,
+                        avgOnOther: avgOnOther !== null ? Math.round(avgOnOther) : null,
                         difference: Math.round(difference),
                         percentDiff: percentDiff.toFixed(1),
-                        impactScore: impactScore,
-                        isPositiveCorrelation: metric.lowerIsBetter ? difference < 0 : difference > 0
+                        hasComparison: hasComparison,
+                        bestWeeksCount: bestWeeksWithMetric.length,
+                        otherWeeksCount: otherWeeksWithMetric.length,
+                        isPositiveCorrelation: isPositiveCorrelation
                     });
                 }
             });
 
-            // Sort by absolute impact score (strongest correlation first)
-            correlations.sort((a, b) => Math.abs(b.impactScore) - Math.abs(a.impactScore));
+            // Sort by absolute percentage difference (biggest difference first)
+            correlations.sort((a, b) => Math.abs(b.percentDiff) - Math.abs(a.percentDiff));
 
             return {
                 metrics: correlations,
@@ -3619,28 +3629,76 @@ Important:
                     Comparing your <strong style="color: #2e7d32;">best ${s.bestWeeksCount} weeks</strong> (avg ${s.avgBestLoss}kg) vs other weeks (avg ${s.avgOtherChange > 0 ? '+' : ''}${s.avgOtherChange}kg)
                 </div>`;
 
-                html += '<div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">Impact ranking:</div>';
+                html += '<div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">Impact ranking (sorted by difference):</div>';
 
                 html += correlations.metrics.map((m, index) => {
-                    const rank = index + 1;
-                    const impactEmoji = m.isPositiveCorrelation ? '✓' : '✗';
-                    const impactColor = m.isPositiveCorrelation ? '#2e7d32' : '#c62828';
-                    const barWidth = Math.min(Math.abs(m.impactScore), 30);
+                    // Handle metrics without comparison data
+                    if (!m.hasComparison) {
+                        const avgValue = m.avgOnBest !== null ? m.avgOnBest : m.avgOnOther;
+                        const weeksCount = m.bestWeeksCount + m.otherWeeksCount;
+                        return `
+                            <div class="correlation-item" style="margin-bottom: 16px; padding: 12px; background: rgba(30,2,64,0.03); border-radius: 10px; opacity: 0.6;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-weight: 600;">${m.icon} ${m.name}</span>
+                                    <span style="font-size: 0.85rem; color: #666;">⚠️ Limited data</span>
+                                </div>
+                                <div style="font-size: 0.8rem; opacity: 0.7;">
+                                    Average: <strong>${avgValue !== null ? avgValue.toLocaleString() + m.unit : 'N/A'}</strong> (${weeksCount} weeks with data)
+                                </div>
+                                <div style="font-size: 0.75rem; color: #666; margin-top: 4px;">
+                                    Not enough data to compare best vs other weeks. Keep logging!
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    const diffPercent = Math.abs(m.percentDiff);
+                    const isHigherOnBest = m.difference > 0;
+                    const direction = isHigherOnBest ? 'higher' : 'lower';
+
+                    // Threshold for meaningful difference (5%)
+                    const SIGNIFICANCE_THRESHOLD = 5;
+                    const isMeaningfulDifference = diffPercent >= SIGNIFICANCE_THRESHOLD;
+
+                    // Determine if this direction is good for weight loss
+                    const isGoodForWeightLoss = m.lowerIsBetter ? !isHigherOnBest : isHigherOnBest;
+
+                    // Colors and verdicts based on significance
+                    let verdictColor, verdict, explanation;
+                    if (!isMeaningfulDifference) {
+                        verdictColor = '#666';
+                        verdict = '➖';
+                        explanation = `No meaningful difference between best and other weeks`;
+                    } else if (isGoodForWeightLoss) {
+                        verdictColor = '#2e7d32';
+                        verdict = '👍';
+                        explanation = `✓ ${m.lowerIsBetter ? 'Lower' : 'Higher'} ${m.name.toLowerCase()} correlates with better weight loss`;
+                    } else {
+                        verdictColor = '#c62828';
+                        verdict = '👎';
+                        explanation = `✗ ${m.lowerIsBetter ? 'Higher' : 'Lower'} ${m.name.toLowerCase()} on best weeks - unexpected`;
+                    }
+
+                    // Progress bar width based on percentage difference (max 50%)
+                    const barWidth = Math.min(diffPercent, 50);
+
+                    // Badge text
+                    const badgeText = isMeaningfulDifference ? `${diffPercent}% ${direction}` : 'No difference';
 
                     return `
-                        <div class="correlation-item" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                            <div style="font-size: 1.1rem; font-weight: 700; color: ${rank <= 2 ? '#2e7d32' : 'rgba(30,2,64,0.4)'}; min-width: 24px;">#${rank}</div>
-                            <div style="flex: 1;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span>${m.icon} ${m.name}</span>
-                                    <span style="color: ${impactColor}; font-weight: 600;">${impactEmoji} ${Math.abs(m.percentDiff)}%</span>
-                                </div>
-                                <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">
-                                    Best weeks: ${m.avgOnBest.toLocaleString()}${m.unit} · Other: ${m.avgOnOther.toLocaleString()}${m.unit}
-                                </div>
-                                <div style="height: 4px; background: rgba(30,2,64,0.1); border-radius: 2px; margin-top: 4px;">
-                                    <div style="height: 100%; width: ${barWidth}%; background: ${impactColor}; border-radius: 2px;"></div>
-                                </div>
+                        <div class="correlation-item" style="margin-bottom: 16px; padding: 12px; background: rgba(30,2,64,0.03); border-radius: 10px; ${!isMeaningfulDifference ? 'opacity: 0.7;' : ''}">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">${m.icon} ${m.name}</span>
+                                <span style="font-size: 0.85rem; color: ${verdictColor};">${verdict} ${badgeText}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 6px;">
+                                Best weeks: <strong>${m.avgOnBest.toLocaleString()}${m.unit}</strong> vs Other weeks: <strong>${m.avgOnOther.toLocaleString()}${m.unit}</strong>
+                            </div>
+                            <div style="font-size: 0.75rem; color: ${verdictColor}; margin-bottom: 4px;">
+                                ${explanation}
+                            </div>
+                            <div style="height: 6px; background: rgba(30,2,64,0.1); border-radius: 3px;">
+                                <div style="height: 100%; width: ${barWidth}%; background: ${verdictColor}; border-radius: 3px;"></div>
                             </div>
                         </div>
                     `;
@@ -3656,11 +3714,14 @@ Important:
         function generateTextInsights(correlations, weeklyData) {
             const insightsContainer = document.getElementById('key-insights');
             const insights = [];
+            const SIGNIFICANCE_THRESHOLD = 5;
 
             if (correlations && correlations.metrics && correlations.metrics.length > 0) {
                 const s = correlations.summary;
-                const topMetrics = correlations.metrics.filter(m => m.isPositiveCorrelation).slice(0, 2);
-                const bottomMetrics = correlations.metrics.filter(m => !m.isPositiveCorrelation);
+                // Only consider metrics with meaningful differences (>= 5%) and comparison data
+                const significantMetrics = correlations.metrics.filter(m => m.hasComparison && Math.abs(m.percentDiff) >= SIGNIFICANCE_THRESHOLD);
+                const topMetrics = significantMetrics.filter(m => m.isPositiveCorrelation).slice(0, 2);
+                const noImpactMetrics = correlations.metrics.filter(m => m.hasComparison && Math.abs(m.percentDiff) < SIGNIFICANCE_THRESHOLD);
 
                 // What's working
                 if (topMetrics.length > 0) {
@@ -3683,18 +3744,16 @@ Important:
                     }
                 }
 
-                // What doesn't seem to matter as much
-                if (bottomMetrics.length > 0) {
-                    const low = bottomMetrics[bottomMetrics.length - 1];
-                    if (Math.abs(low.impactScore) < 5) {
-                        insights.push(`<strong>Less critical:</strong> ${low.icon} ${low.name} doesn't show a strong correlation with your weight loss. Don't stress about optimizing this one.`);
-                    }
+                // Metrics with no meaningful difference
+                if (noImpactMetrics.length > 0) {
+                    const noImpactNames = noImpactMetrics.map(m => m.name.toLowerCase()).join(', ');
+                    insights.push(`<strong>No clear impact:</strong> ${noImpactNames} showed no meaningful difference between your best and other weeks. These may not be key factors for your weight loss.`);
                 }
 
-                // Actionable targets
-                const calorieMetric = correlations.metrics.find(m => m.key === 'avgCalories');
-                const stepsMetric = correlations.metrics.find(m => m.key === 'avgSteps');
-                const workoutMetric = correlations.metrics.find(m => m.key === 'totalWorkouts');
+                // Actionable targets (only from significant metrics)
+                const calorieMetric = significantMetrics.find(m => m.key === 'avgCalories');
+                const stepsMetric = significantMetrics.find(m => m.key === 'avgSteps');
+                const workoutMetric = significantMetrics.find(m => m.key === 'totalWorkouts');
 
                 let targets = [];
                 if (calorieMetric && calorieMetric.isPositiveCorrelation) {
