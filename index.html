@@ -1064,7 +1064,7 @@
         }
 
         .insight-stat .value.positive {
-            color: #2e7d32;
+            color: #5DD07C;
         }
 
         .insight-stat .value.negative {
@@ -3028,14 +3028,12 @@ Important:
 
                         // Only show data point if there's actual valid data for this week
                         if (weekCount > 0 && validCount > 0) {
-                            // For workouts, show total; for restingHR, average valid values; for others, average over all days
+                            // For workouts, show total; for others, average over days with actual data
                             let dataValue;
                             if (type === 'workoutCount') {
                                 dataValue = weekTotal;
-                            } else if (type === 'restingHR') {
-                                dataValue = Math.round(weekTotal / validCount);
                             } else {
-                                dataValue = Math.round(weekTotal / weekCount);
+                                dataValue = Math.round(weekTotal / validCount);
                             }
                             data.push(dataValue);
                             // Show first date of the week as label
@@ -3097,15 +3095,13 @@ Important:
                             }
                         }
 
-                        if (monthCount > 0) {
-                            // For workouts, show total; for restingHR, average valid values; for others, average over all days
+                        if (monthCount > 0 && validCount > 0) {
+                            // For workouts, show total; for others, average over days with actual data
                             let dataValue;
                             if (type === 'workoutCount') {
                                 dataValue = monthTotal;
-                            } else if (type === 'restingHR' && validCount > 0) {
-                                dataValue = Math.round(monthTotal / validCount);
                             } else {
-                                dataValue = validCount > 0 ? Math.round(monthTotal / monthCount) : 0;
+                                dataValue = Math.round(monthTotal / validCount);
                             }
                             data.push(dataValue);
                         } else {
@@ -3626,7 +3622,7 @@ Important:
                 const s = correlations.summary;
 
                 let html = `<div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 15px; padding: 12px; background: rgba(30,2,64,0.05); border-radius: 8px;">
-                    Comparing your <strong style="color: #2e7d32;">best ${s.bestWeeksCount} weeks</strong> (avg ${s.avgBestLoss}kg) vs other weeks (avg ${s.avgOtherChange > 0 ? '+' : ''}${s.avgOtherChange}kg)
+                    Comparing your <strong style="color: #5DD07C;">best ${s.bestWeeksCount} weeks</strong> (avg ${s.avgBestLoss}kg) vs other weeks (avg ${s.avgOtherChange > 0 ? '+' : ''}${s.avgOtherChange}kg)
                 </div>`;
 
                 html += '<div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">Impact ranking (sorted by difference):</div>';
@@ -3670,7 +3666,7 @@ Important:
                         verdict = '➖';
                         explanation = `No meaningful difference between best and other weeks`;
                     } else if (isGoodForWeightLoss) {
-                        verdictColor = '#2e7d32';
+                        verdictColor = '#5DD07C';
                         verdict = '👍';
                         explanation = `✓ ${m.lowerIsBetter ? 'Lower' : 'Higher'} ${m.name.toLowerCase()} correlates with better weight loss`;
                     } else {
@@ -3694,11 +3690,8 @@ Important:
                             <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 6px;">
                                 Best weeks: <strong>${m.avgOnBest.toLocaleString()}${m.unit}</strong> vs Other weeks: <strong>${m.avgOnOther.toLocaleString()}${m.unit}</strong>
                             </div>
-                            <div style="font-size: 0.75rem; color: ${verdictColor}; margin-bottom: 4px;">
+                            <div style="font-size: 0.75rem; color: ${verdictColor};">
                                 ${explanation}
-                            </div>
-                            <div style="height: 6px; background: rgba(30,2,64,0.1); border-radius: 3px;">
-                                <div style="height: 100%; width: ${barWidth}%; background: ${verdictColor}; border-radius: 3px;"></div>
                             </div>
                         </div>
                     `;
