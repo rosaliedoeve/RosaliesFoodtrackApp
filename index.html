@@ -1160,7 +1160,7 @@
                             <span class="donut-unit">g</span>
                         </div>
                     </div>
-                    <div class="donut-label">Protein</div>
+                    <div class="donut-label">Protein <span id="home-protein-percent" style="opacity: 0.7; font-size: 0.85em;"></span></div>
                     <div class="donut-sublabel"><span id="home-protein-goal">75</span>g goal</div>
                 </div>
             </div>
@@ -1254,7 +1254,7 @@
         </div>
 
         <!-- Daily Totals -->
-        <div class="daily-totals" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="daily-totals" style="grid-template-columns: repeat(3, 1fr);">
             <div class="total-item">
                 <div class="value" id="food-total-calories">0</div>
                 <div class="label">kcal</div>
@@ -1262,6 +1262,10 @@
             <div class="total-item">
                 <div class="value" id="food-total-protein">0g</div>
                 <div class="label">protein</div>
+            </div>
+            <div class="total-item">
+                <div class="value" id="food-protein-percent">0%</div>
+                <div class="label">protein %</div>
             </div>
         </div>
 
@@ -2024,6 +2028,10 @@
             document.getElementById('home-protein').textContent = Math.round(totalProtein);
             document.getElementById('home-protein-goal').textContent = goals.protein;
 
+            // Calculate and display protein %
+            const proteinPercent = totalCalories > 0 ? Math.round((totalProtein * 4 / totalCalories) * 100) : 0;
+            document.getElementById('home-protein-percent').textContent = totalCalories > 0 ? `(${proteinPercent}%)` : '';
+
             const caloriesRemaining = goals.calories - totalCalories;
             document.getElementById('home-calories-remaining').textContent =
                 caloriesRemaining >= 0 ? `${Math.round(caloriesRemaining)} left` : `${Math.round(Math.abs(caloriesRemaining))} over`;
@@ -2485,9 +2493,11 @@
             // Update totals
             const totalCalories = foods.reduce((sum, f) => sum + f.calories, 0);
             const totalProtein = foods.reduce((sum, f) => sum + f.protein, 0);
+            const proteinPercent = totalCalories > 0 ? Math.round((totalProtein * 4 / totalCalories) * 100) : 0;
 
             document.getElementById('food-total-calories').textContent = Math.round(totalCalories);
             document.getElementById('food-total-protein').textContent = `${Math.round(totalProtein)}g`;
+            document.getElementById('food-protein-percent').textContent = `${proteinPercent}%`;
 
             if (foods.length === 0) {
                 list.innerHTML = `
@@ -3439,6 +3449,7 @@ Important:
                     weights: [],
                     calories: [],
                     protein: [],
+                    proteinPercent: [],
                     steps: [],
                     minutes: [],
                     restingHR: [],
@@ -3458,6 +3469,11 @@ Important:
                     const dailyProtein = foods.reduce((sum, f) => sum + f.protein, 0);
                     if (dailyCals > 0) weekData.calories.push(dailyCals);
                     if (dailyProtein > 0) weekData.protein.push(dailyProtein);
+                    // Calculate protein % for days with both calories and protein
+                    if (dailyCals > 0 && dailyProtein > 0) {
+                        const proteinPercent = (dailyProtein * 4 / dailyCals) * 100;
+                        weekData.proteinPercent.push(proteinPercent);
+                    }
 
                     const steps = loadData('steps', date);
                     if (steps) weekData.steps.push(steps);
@@ -3479,6 +3495,7 @@ Important:
                 weekData.avgWeight = weekData.weights.length > 0 ? weekData.weights.reduce((a, b) => a + b, 0) / weekData.weights.length : null;
                 weekData.avgCalories = avg(weekData.calories, 1);  // Any logged food counts
                 weekData.avgProtein = avg(weekData.protein, 1);    // Any logged food counts
+                weekData.avgProteinPercent = avg(weekData.proteinPercent, 1); // Protein % of calories
                 weekData.avgSteps = avg(weekData.steps, 3);        // Need 3+ days for reliable step average
                 weekData.avgMinutes = avg(weekData.minutes, 3);    // Need 3+ days for reliable minutes average
                 weekData.avgRestingHR = avg(weekData.restingHR);
@@ -3501,6 +3518,7 @@ Important:
             const metrics = [
                 { key: 'avgCalories', name: 'Calories', unit: 'kcal', lowerIsBetter: true, icon: '🍽️' },
                 { key: 'avgProtein', name: 'Protein', unit: 'g', lowerIsBetter: false, icon: '🥩' },
+                { key: 'avgProteinPercent', name: 'Protein %', unit: '%', lowerIsBetter: false, icon: '💪' },
                 { key: 'avgSteps', name: 'Steps', unit: '', lowerIsBetter: false, icon: '👟' },
                 { key: 'avgMinutes', name: 'Zone minutes', unit: 'min', lowerIsBetter: false, icon: '❤️' },
                 { key: 'totalWorkouts', name: 'Workouts', unit: '', lowerIsBetter: false, icon: '🏋🏽‍♀️' }
@@ -3729,6 +3747,8 @@ Important:
                         insights.push(`<strong>🎯 Heart zone training works.</strong> Your best weeks had <strong>${top.avgOnBest} minutes</strong> in zone vs ${top.avgOnOther} in other weeks. High-intensity exercise is paying off!`);
                     } else if (top.key === 'avgProtein') {
                         insights.push(`<strong>🎯 Protein helps.</strong> Your best weeks averaged <strong>${top.avgOnBest}g protein/day</strong>. Higher protein intake correlates with better weight loss.`);
+                    } else if (top.key === 'avgProteinPercent') {
+                        insights.push(`<strong>🎯 Protein ratio matters.</strong> Your best weeks had <strong>${top.avgOnBest}% of calories from protein</strong>. That's ${Math.abs(top.percentDiff)}% higher than other weeks. Prioritizing protein helps with satiety and muscle retention!`);
                     }
 
                     if (topMetrics.length > 1) {
@@ -3747,10 +3767,14 @@ Important:
                 const calorieMetric = significantMetrics.find(m => m.key === 'avgCalories');
                 const stepsMetric = significantMetrics.find(m => m.key === 'avgSteps');
                 const workoutMetric = significantMetrics.find(m => m.key === 'totalWorkouts');
+                const proteinPercentMetric = significantMetrics.find(m => m.key === 'avgProteinPercent');
 
                 let targets = [];
                 if (calorieMetric && calorieMetric.isPositiveCorrelation) {
                     targets.push(`~${calorieMetric.avgOnBest.toLocaleString()} kcal/day`);
+                }
+                if (proteinPercentMetric && proteinPercentMetric.isPositiveCorrelation) {
+                    targets.push(`${proteinPercentMetric.avgOnBest}%+ protein`);
                 }
                 if (stepsMetric && stepsMetric.isPositiveCorrelation) {
                     targets.push(`${stepsMetric.avgOnBest.toLocaleString()}+ steps`);
