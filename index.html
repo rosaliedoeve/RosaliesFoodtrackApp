@@ -1439,7 +1439,7 @@
     <!-- Insights Page -->
     <div id="page-insights" class="page">
         <div class="insight-card">
-            <h3>📊 Weight Progress</h3>
+            <h3>🪆 Weight Progress</h3>
             <div class="insight-stat">
                 <span class="label">Starting weight (Dec 13)</span>
                 <span class="value" id="insight-start-weight">--</span>
@@ -1459,7 +1459,7 @@
         </div>
 
         <div class="insight-card">
-            <h3>🔗 Correlations with Weight Loss</h3>
+            <h3>🪸 Correlations with Weight Loss</h3>
             <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 15px;">
                 What tends to happen on weeks when you lose weight?
             </p>
@@ -1673,6 +1673,10 @@
             <div class="workout-grid" id="workout-grid">
                 <!-- Populated by JS -->
             </div>
+            <div id="custom-workout-fields" style="display: none; margin-top: 15px;">
+                <input type="text" id="custom-workout-name" placeholder="Workout name" class="modal-input" style="margin-bottom: 10px;">
+                <input type="number" id="custom-workout-duration" placeholder="Duration (minutes)" class="modal-input" min="1">
+            </div>
             <button class="btn btn-primary" onclick="saveWorkout()" style="width: 100%; margin-top: 15px;" id="save-workout-btn" disabled>Log Workout</button>
         </div>
     </div>
@@ -1850,14 +1854,15 @@
 
         // Workout type definitions
         const WORKOUT_TYPES = {
-            shred: { name: "Shred", duration: 50, description: "HIIT (treadmill + strength)" },
-            build: { name: "Build", duration: 50, description: "Strength (heavy)" },
-            sculpt: { name: "Sculpt", duration: 50, description: "Pilates (heated, core-focused)" },
-            hyrox: { name: "Hyrox", duration: 50, description: "HIIT (cardio + strength)" },
-            booty: { name: "Booty", duration: 50, description: "Cardio + glutes (stairmaster + strength)" },
-            openGymRunning: { name: "Open gym running", duration: 25, description: "Treadmill intervals" },
-            openGymStrength: { name: "Open gym strength", duration: 30, description: "Strength + core" },
-            hike: { name: "Hike", duration: 240, description: "Hiking in mountains" }
+            shred: { name: "Shred", emoji: "🏃🏽‍♀️", duration: 50, description: "HIIT (treadmill + strength)" },
+            build: { name: "Build", emoji: "🏋🏽‍♀️", duration: 50, description: "Strength (heavy)" },
+            sculpt: { name: "Sculpt", emoji: "🤸🏽‍♀️", duration: 50, description: "Pilates (heated, core-focused)" },
+            hyrox: { name: "Hyrox", emoji: "🚣🏽‍♀️", duration: 50, description: "HIIT (cardio + strength)" },
+            booty: { name: "Booty", emoji: "🍑", duration: 50, description: "Cardio + glutes (stairmaster + strength)" },
+            openGymRunning: { name: "Open gym running", emoji: "🏃🏽‍♀️", duration: 25, description: "Treadmill intervals" },
+            openGymStrength: { name: "Open gym strength", emoji: "🏋🏽‍♀️", duration: 30, description: "Strength + core" },
+            hike: { name: "Hike", emoji: "🥾", duration: 240, description: "Hiking in mountains" },
+            yoga: { name: "Yoga", emoji: "🧘🏽‍♀️", duration: 60, description: "Yoga session" }
         };
 
         let selectedWorkoutType = null;
@@ -2035,12 +2040,15 @@
             if (workouts.length === 0) {
                 pillsContainer.innerHTML = '<div class="sub-text" style="margin-top: 5px;">No workouts logged</div>';
             } else {
-                pillsContainer.innerHTML = workouts.map((w, i) => `
+                pillsContainer.innerHTML = workouts.map((w, i) => {
+                    const emoji = w.type === 'custom' ? '💃🏽' : (WORKOUT_TYPES[w.type]?.emoji || '');
+                    return `
                     <div class="workout-pill">
-                        ${w.name}
+                        ${emoji} ${w.name}
                         <button class="delete-workout" onclick="deleteWorkout(${i})">×</button>
                     </div>
-                `).join('');
+                `;
+                }).join('');
             }
         }
 
@@ -2164,18 +2172,32 @@
 
         function closeWorkoutModal() {
             document.getElementById('workout-modal-overlay').classList.remove('active');
+            document.getElementById('custom-workout-fields').style.display = 'none';
+            document.getElementById('custom-workout-name').value = '';
+            document.getElementById('custom-workout-duration').value = '';
             selectedWorkoutType = null;
         }
 
         function renderWorkoutGrid() {
             const grid = document.getElementById('workout-grid');
-            grid.innerHTML = Object.entries(WORKOUT_TYPES).map(([key, workout]) => `
+            let html = Object.entries(WORKOUT_TYPES).map(([key, workout]) => `
                 <div class="workout-option" data-type="${key}" onclick="selectWorkout('${key}')">
-                    <div class="workout-name">${workout.name}</div>
+                    <div class="workout-name">${workout.emoji} ${workout.name}</div>
                     <div class="workout-duration">${workout.duration} min</div>
                     <div class="workout-desc">${workout.description}</div>
                 </div>
             `).join('');
+
+            // Add custom workout option
+            html += `
+                <div class="workout-option" data-type="custom" onclick="selectWorkout('custom')">
+                    <div class="workout-name">💃🏽 Custom workout</div>
+                    <div class="workout-duration">Your choice</div>
+                    <div class="workout-desc">Enter your own workout</div>
+                </div>
+            `;
+
+            grid.innerHTML = html;
         }
 
         function selectWorkout(type) {
@@ -2183,6 +2205,16 @@
             document.querySelectorAll('.workout-option').forEach(el => {
                 el.classList.toggle('selected', el.dataset.type === type);
             });
+
+            // Show/hide custom fields
+            const customFields = document.getElementById('custom-workout-fields');
+            if (type === 'custom') {
+                customFields.style.display = 'block';
+                document.getElementById('custom-workout-name').focus();
+            } else {
+                customFields.style.display = 'none';
+            }
+
             document.getElementById('save-workout-btn').disabled = false;
         }
 
@@ -2190,18 +2222,39 @@
             if (!selectedWorkoutType) return;
 
             const workouts = loadData('workouts', currentDate) || [];
-            const workoutType = WORKOUT_TYPES[selectedWorkoutType];
 
-            workouts.push({
-                type: selectedWorkoutType,
-                name: workoutType.name,
-                duration: workoutType.duration,
-                timestamp: Date.now()
-            });
+            if (selectedWorkoutType === 'custom') {
+                const customName = document.getElementById('custom-workout-name').value.trim();
+                const customDuration = parseInt(document.getElementById('custom-workout-duration').value) || 0;
+
+                if (!customName || !customDuration) {
+                    alert('Please enter workout name and duration');
+                    return;
+                }
+
+                workouts.push({
+                    type: 'custom',
+                    name: customName,
+                    duration: customDuration,
+                    timestamp: Date.now()
+                });
+            } else {
+                const workoutType = WORKOUT_TYPES[selectedWorkoutType];
+                workouts.push({
+                    type: selectedWorkoutType,
+                    name: workoutType.name,
+                    duration: workoutType.duration,
+                    timestamp: Date.now()
+                });
+            }
 
             saveData('workouts', workouts, currentDate);
             closeWorkoutModal();
             updateHomeDisplay();
+
+            // Clear custom fields
+            document.getElementById('custom-workout-name').value = '';
+            document.getElementById('custom-workout-duration').value = '';
         }
 
         function deleteWorkout(index) {
@@ -3185,15 +3238,13 @@ Important:
                 current.setDate(current.getDate() + 1);
             }
 
-            // Prepare data for chart (only show types with count > 0)
-            const labels = [];
-            const data = [];
-            Object.entries(workoutCounts).forEach(([type, count]) => {
-                if (count > 0) {
-                    labels.push(WORKOUT_TYPES[type].name);
-                    data.push(count);
-                }
-            });
+            // Prepare data for chart (only show types with count > 0, sorted most to least)
+            const sortedWorkouts = Object.entries(workoutCounts)
+                .filter(([type, count]) => count > 0)
+                .sort((a, b) => b[1] - a[1]);
+
+            const labels = sortedWorkouts.map(([type]) => WORKOUT_TYPES[type].name);
+            const data = sortedWorkouts.map(([, count]) => count);
 
             if (charts['chart-workouts']) {
                 charts['chart-workouts'].destroy();
@@ -3275,8 +3326,8 @@ Important:
             document.getElementById('avg-calories').textContent = avgCalories > 0 ? `🌀 ${avgCalories.toLocaleString()} kcal` : '';
             document.getElementById('avg-steps').textContent = avgSteps > 0 ? `🌀 ${avgSteps.toLocaleString()}` : '';
             document.getElementById('avg-minutes').textContent = avgMinutes > 0 ? `🌀 ${avgMinutes} min` : '';
-            document.getElementById('avg-resting-hr').textContent = avgRestingHR > 0 ? `🌀 ${avgRestingHR} bpm` : '';
-            document.getElementById('avg-workouts').textContent = totalWorkouts > 0 ? `🌀 ${totalWorkouts} total` : '';
+            document.getElementById('avg-resting-hr').textContent = avgRestingHR > 0 ? `🫀 ${avgRestingHR} bpm` : '';
+            document.getElementById('avg-workouts').textContent = totalWorkouts > 0 ? `${totalWorkouts} total` : '';
         }
 
         // ==================== INSIGHTS ====================
@@ -3646,7 +3697,8 @@ Important:
                                 'Booty': 'booty',
                                 'Open gym running': 'openGymRunning',
                                 'Open gym strength': 'openGymStrength',
-                                'Hike': 'hike'
+                                'Hike': 'hike',
+                                'Yoga': 'yoga'
                             };
                             const workoutType = workoutTypeMap[workoutName];
                             if (workoutType && WORKOUT_TYPES[workoutType]) {
