@@ -1417,7 +1417,7 @@
 
         <div class="chart-container">
             <div class="chart-header">
-                <h3>💓 Resting Heart Rate</h3>
+                <h3>🫀 Resting Heart Rate</h3>
                 <span class="chart-avg" id="avg-resting-hr"></span>
             </div>
             <div class="chart-wrapper">
@@ -1459,9 +1459,9 @@
         </div>
 
         <div class="insight-card">
-            <h3>🪸 Correlations with Weight Loss</h3>
+            <h3>🪸 What Drives Your Results</h3>
             <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 15px;">
-                What tends to happen on weeks when you lose weight?
+                Which metrics have the biggest impact on your weight loss?
             </p>
             <div id="correlation-results">
                 <!-- Populated by JS -->
@@ -1469,7 +1469,7 @@
         </div>
 
         <div class="insight-card">
-            <h3>💡 Key Insights</h3>
+            <h3>💡 What This Means For You</h3>
             <div id="key-insights">
                 <!-- Populated by JS -->
             </div>
@@ -1673,11 +1673,26 @@
             <div class="workout-grid" id="workout-grid">
                 <!-- Populated by JS -->
             </div>
-            <div id="custom-workout-fields" style="display: none; margin-top: 15px;">
-                <input type="text" id="custom-workout-name" placeholder="Workout name" class="modal-input" style="margin-bottom: 10px;">
-                <input type="number" id="custom-workout-duration" placeholder="Duration (minutes)" class="modal-input" min="1">
-            </div>
             <button class="btn btn-primary" onclick="saveWorkout()" style="width: 100%; margin-top: 15px;" id="save-workout-btn" disabled>Log Workout</button>
+        </div>
+    </div>
+
+    <!-- Modal for Custom Workout -->
+    <div class="modal-overlay" id="custom-workout-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>💃🏽 Custom Workout</h2>
+                <button class="modal-close" onclick="closeCustomWorkoutModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label>Workout Name</label>
+                <input type="text" id="custom-workout-name" placeholder="e.g., Morning run">
+            </div>
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="custom-workout-duration" placeholder="e.g., 30" min="1">
+            </div>
+            <button class="btn btn-primary" onclick="saveCustomWorkout()" style="width: 100%;">Log Workout</button>
         </div>
     </div>
 
@@ -2172,9 +2187,6 @@
 
         function closeWorkoutModal() {
             document.getElementById('workout-modal-overlay').classList.remove('active');
-            document.getElementById('custom-workout-fields').style.display = 'none';
-            document.getElementById('custom-workout-name').value = '';
-            document.getElementById('custom-workout-duration').value = '';
             selectedWorkoutType = null;
         }
 
@@ -2184,16 +2196,14 @@
                 <div class="workout-option" data-type="${key}" onclick="selectWorkout('${key}')">
                     <div class="workout-name">${workout.emoji} ${workout.name}</div>
                     <div class="workout-duration">${workout.duration} min</div>
-                    <div class="workout-desc">${workout.description}</div>
                 </div>
             `).join('');
 
             // Add custom workout option
             html += `
-                <div class="workout-option" data-type="custom" onclick="selectWorkout('custom')">
+                <div class="workout-option" data-type="custom" onclick="openCustomWorkoutModal()">
                     <div class="workout-name">💃🏽 Custom workout</div>
                     <div class="workout-duration">Your choice</div>
-                    <div class="workout-desc">Enter your own workout</div>
                 </div>
             `;
 
@@ -2205,16 +2215,6 @@
             document.querySelectorAll('.workout-option').forEach(el => {
                 el.classList.toggle('selected', el.dataset.type === type);
             });
-
-            // Show/hide custom fields
-            const customFields = document.getElementById('custom-workout-fields');
-            if (type === 'custom') {
-                customFields.style.display = 'block';
-                document.getElementById('custom-workout-name').focus();
-            } else {
-                customFields.style.display = 'none';
-            }
-
             document.getElementById('save-workout-btn').disabled = false;
         }
 
@@ -2222,39 +2222,52 @@
             if (!selectedWorkoutType) return;
 
             const workouts = loadData('workouts', currentDate) || [];
+            const workoutType = WORKOUT_TYPES[selectedWorkoutType];
 
-            if (selectedWorkoutType === 'custom') {
-                const customName = document.getElementById('custom-workout-name').value.trim();
-                const customDuration = parseInt(document.getElementById('custom-workout-duration').value) || 0;
-
-                if (!customName || !customDuration) {
-                    alert('Please enter workout name and duration');
-                    return;
-                }
-
-                workouts.push({
-                    type: 'custom',
-                    name: customName,
-                    duration: customDuration,
-                    timestamp: Date.now()
-                });
-            } else {
-                const workoutType = WORKOUT_TYPES[selectedWorkoutType];
-                workouts.push({
-                    type: selectedWorkoutType,
-                    name: workoutType.name,
-                    duration: workoutType.duration,
-                    timestamp: Date.now()
-                });
-            }
+            workouts.push({
+                type: selectedWorkoutType,
+                name: workoutType.name,
+                duration: workoutType.duration,
+                timestamp: Date.now()
+            });
 
             saveData('workouts', workouts, currentDate);
             closeWorkoutModal();
             updateHomeDisplay();
+        }
 
-            // Clear custom fields
+        function openCustomWorkoutModal() {
+            closeWorkoutModal();
+            document.getElementById('custom-workout-modal-overlay').classList.add('active');
+            document.getElementById('custom-workout-name').focus();
+        }
+
+        function closeCustomWorkoutModal() {
+            document.getElementById('custom-workout-modal-overlay').classList.remove('active');
             document.getElementById('custom-workout-name').value = '';
             document.getElementById('custom-workout-duration').value = '';
+        }
+
+        function saveCustomWorkout() {
+            const customName = document.getElementById('custom-workout-name').value.trim();
+            const customDuration = parseInt(document.getElementById('custom-workout-duration').value) || 0;
+
+            if (!customName || !customDuration) {
+                alert('Please enter workout name and duration');
+                return;
+            }
+
+            const workouts = loadData('workouts', currentDate) || [];
+            workouts.push({
+                type: 'custom',
+                name: customName,
+                duration: customDuration,
+                timestamp: Date.now()
+            });
+
+            saveData('workouts', workouts, currentDate);
+            closeCustomWorkoutModal();
+            updateHomeDisplay();
         }
 
         function deleteWorkout(index) {
@@ -2936,7 +2949,7 @@ Important:
                     const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
                     weekStart.setDate(firstDay.getDate() + mondayOffset);
 
-                    while (weekStart <= lastDay) {
+                    while (weekStart <= lastDay && weekStart <= today) {
                         let weekTotal = 0;
                         let weekCount = 0;
                         let validCount = 0;
@@ -2945,8 +2958,8 @@ Important:
                             const date = new Date(weekStart);
                             date.setDate(weekStart.getDate() + d);
 
-                            // Only count days within the current month
-                            if (date.getMonth() === month) {
+                            // Only count days within the current month and not in the future
+                            if (date.getMonth() === month && date <= today) {
                                 const value = getDayValue(type, date);
                                 weekCount++;
                                 if (value !== null && value !== undefined && value > 0) {
@@ -2957,9 +2970,16 @@ Important:
                         }
 
                         if (weekCount > 0) {
-                            // For restingHR, only average valid values; for others, average over all days
-                            const divisor = (type === 'restingHR' && validCount > 0) ? validCount : weekCount;
-                            data.push(validCount > 0 ? Math.round(weekTotal / divisor) : 0);
+                            // For workouts, show total; for restingHR, average valid values; for others, average over all days
+                            let dataValue;
+                            if (type === 'workoutCount') {
+                                dataValue = weekTotal;
+                            } else if (type === 'restingHR' && validCount > 0) {
+                                dataValue = Math.round(weekTotal / validCount);
+                            } else {
+                                dataValue = validCount > 0 ? Math.round(weekTotal / weekCount) : 0;
+                            }
+                            data.push(dataValue);
                             // Show first date of the week as label
                             const labelDate = new Date(weekStart);
                             if (labelDate.getMonth() < month) {
@@ -3020,9 +3040,16 @@ Important:
                         }
 
                         if (monthCount > 0) {
-                            // For restingHR, only average valid values; for others, average over all days
-                            const divisor = (type === 'restingHR' && validCount > 0) ? validCount : monthCount;
-                            data.push(validCount > 0 ? Math.round(monthTotal / divisor) : 0);
+                            // For workouts, show total; for restingHR, average valid values; for others, average over all days
+                            let dataValue;
+                            if (type === 'workoutCount') {
+                                dataValue = monthTotal;
+                            } else if (type === 'restingHR' && validCount > 0) {
+                                dataValue = Math.round(monthTotal / validCount);
+                            } else {
+                                dataValue = validCount > 0 ? Math.round(monthTotal / monthCount) : 0;
+                            }
+                            data.push(dataValue);
                         } else {
                             data.push(0);
                         }
@@ -3326,7 +3353,7 @@ Important:
             document.getElementById('avg-calories').textContent = avgCalories > 0 ? `🌀 ${avgCalories.toLocaleString()} kcal` : '';
             document.getElementById('avg-steps').textContent = avgSteps > 0 ? `🌀 ${avgSteps.toLocaleString()}` : '';
             document.getElementById('avg-minutes').textContent = avgMinutes > 0 ? `🌀 ${avgMinutes} min` : '';
-            document.getElementById('avg-resting-hr').textContent = avgRestingHR > 0 ? `🫀 ${avgRestingHR} bpm` : '';
+            document.getElementById('avg-resting-hr').textContent = avgRestingHR > 0 ? `🌀 ${avgRestingHR} bpm` : '';
             document.getElementById('avg-workouts').textContent = totalWorkouts > 0 ? `${totalWorkouts} total` : '';
         }
 
@@ -3409,8 +3436,13 @@ Important:
         function calculateCorrelations(weeklyData) {
             if (weeklyData.length < 3) return null;
 
-            const correlations = {};
-            const metrics = ['avgCalories', 'avgProtein', 'avgSteps', 'avgMinutes', 'totalWorkouts'];
+            const metrics = [
+                { key: 'avgCalories', name: 'Calories', unit: 'kcal', lowerIsBetter: true, icon: '🍽️' },
+                { key: 'avgProtein', name: 'Protein', unit: 'g', lowerIsBetter: false, icon: '🥩' },
+                { key: 'avgSteps', name: 'Steps', unit: '', lowerIsBetter: false, icon: '👟' },
+                { key: 'avgMinutes', name: 'Zone minutes', unit: 'min', lowerIsBetter: false, icon: '❤️' },
+                { key: 'totalWorkouts', name: 'Workouts', unit: '', lowerIsBetter: false, icon: '🏋🏽‍♀️' }
+            ];
 
             // Calculate week-over-week weight changes
             const weightChanges = [];
@@ -3423,24 +3455,62 @@ Important:
                 }
             }
 
+            if (weightChanges.length < 2) return null;
+
+            // Sort by weight change (most loss first)
+            const sortedWeeks = [...weightChanges].sort((a, b) => a.change - b.change);
+            const midpoint = Math.floor(sortedWeeks.length / 2);
+
+            // Split into "best weeks" (more loss) and "other weeks" (less loss or gain)
+            const bestWeeks = sortedWeeks.slice(0, midpoint);
+            const otherWeeks = sortedWeeks.slice(midpoint);
+
+            const avgBestLoss = bestWeeks.reduce((sum, w) => sum + w.change, 0) / bestWeeks.length;
+            const avgOtherChange = otherWeeks.reduce((sum, w) => sum + w.change, 0) / otherWeeks.length;
+
+            // Calculate correlation strength for each metric
+            const correlations = [];
+
             metrics.forEach(metric => {
-                const lossWeeks = weightChanges.filter(w => w.change < 0 && w.week[metric] !== null);
-                const gainWeeks = weightChanges.filter(w => w.change > 0 && w.week[metric] !== null);
+                const bestWeeksWithMetric = bestWeeks.filter(w => w.week[metric.key] !== null && w.week[metric.key] !== undefined);
+                const otherWeeksWithMetric = otherWeeks.filter(w => w.week[metric.key] !== null && w.week[metric.key] !== undefined);
 
-                if (lossWeeks.length > 0 && gainWeeks.length > 0) {
-                    const avgOnLoss = lossWeeks.reduce((sum, w) => sum + w.week[metric], 0) / lossWeeks.length;
-                    const avgOnGain = gainWeeks.reduce((sum, w) => sum + w.week[metric], 0) / gainWeeks.length;
+                if (bestWeeksWithMetric.length > 0 && otherWeeksWithMetric.length > 0) {
+                    const avgOnBest = bestWeeksWithMetric.reduce((sum, w) => sum + w.week[metric.key], 0) / bestWeeksWithMetric.length;
+                    const avgOnOther = otherWeeksWithMetric.reduce((sum, w) => sum + w.week[metric.key], 0) / otherWeeksWithMetric.length;
 
-                    correlations[metric] = {
-                        avgOnLoss: Math.round(avgOnLoss),
-                        avgOnGain: Math.round(avgOnGain),
-                        difference: avgOnLoss - avgOnGain,
-                        percentDiff: avgOnGain !== 0 ? ((avgOnLoss - avgOnGain) / avgOnGain * 100).toFixed(1) : 0
-                    };
+                    const difference = avgOnBest - avgOnOther;
+                    const percentDiff = avgOnOther !== 0 ? ((avgOnBest - avgOnOther) / avgOnOther * 100) : 0;
+
+                    // Calculate impact score (normalized difference)
+                    // For "lower is better" metrics (calories), flip the sign
+                    const impactDirection = metric.lowerIsBetter ? -1 : 1;
+                    const impactScore = Math.abs(percentDiff) * impactDirection * Math.sign(difference);
+
+                    correlations.push({
+                        ...metric,
+                        avgOnBest: Math.round(avgOnBest),
+                        avgOnOther: Math.round(avgOnOther),
+                        difference: Math.round(difference),
+                        percentDiff: percentDiff.toFixed(1),
+                        impactScore: impactScore,
+                        isPositiveCorrelation: metric.lowerIsBetter ? difference < 0 : difference > 0
+                    });
                 }
             });
 
-            return correlations;
+            // Sort by absolute impact score (strongest correlation first)
+            correlations.sort((a, b) => Math.abs(b.impactScore) - Math.abs(a.impactScore));
+
+            return {
+                metrics: correlations,
+                summary: {
+                    totalWeeks: weightChanges.length,
+                    bestWeeksCount: bestWeeks.length,
+                    avgBestLoss: avgBestLoss.toFixed(2),
+                    avgOtherChange: avgOtherChange.toFixed(2)
+                }
+            };
         }
 
         function updateInsightsPage() {
@@ -3475,37 +3545,43 @@ Important:
             const correlations = calculateCorrelations(weeklyData);
             const correlationContainer = document.getElementById('correlation-results');
 
-            if (!correlations || Object.keys(correlations).length === 0) {
-                correlationContainer.innerHTML = '<p style="opacity: 0.6;">Not enough data yet. Keep tracking for insights!</p>';
+            if (!correlations || !correlations.metrics || correlations.metrics.length === 0) {
+                correlationContainer.innerHTML = '<p style="opacity: 0.6;">Not enough data yet (need at least 3 weeks with weight data). Keep tracking!</p>';
             } else {
-                const metricLabels = {
-                    avgCalories: { name: 'Avg daily calories', unit: 'kcal', lowerIsBetter: true },
-                    avgProtein: { name: 'Avg daily protein', unit: 'g', lowerIsBetter: false },
-                    avgSteps: { name: 'Avg daily steps', unit: '', lowerIsBetter: false },
-                    avgMinutes: { name: 'Avg heart zone minutes', unit: 'min', lowerIsBetter: false },
-                    totalWorkouts: { name: 'Weekly workouts', unit: '', lowerIsBetter: false }
-                };
+                const s = correlations.summary;
 
-                correlationContainer.innerHTML = Object.entries(correlations)
-                    .map(([metric, data]) => {
-                        const label = metricLabels[metric];
-                        const isPositive = label.lowerIsBetter ? data.difference < 0 : data.difference > 0;
+                let html = `<div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 15px; padding: 12px; background: rgba(30,2,64,0.05); border-radius: 8px;">
+                    Comparing your <strong style="color: #2e7d32;">best ${s.bestWeeksCount} weeks</strong> (avg ${s.avgBestLoss}kg) vs other weeks (avg ${s.avgOtherChange > 0 ? '+' : ''}${s.avgOtherChange}kg)
+                </div>`;
 
-                        return `
-                            <div class="correlation-item">
-                                <div class="correlation-header">
-                                    <span class="label">${label.name}</span>
-                                    <span class="value ${isPositive ? 'positive' : ''}">${data.percentDiff > 0 ? '+' : ''}${data.percentDiff}%</span>
+                html += '<div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;">Impact ranking:</div>';
+
+                html += correlations.metrics.map((m, index) => {
+                    const rank = index + 1;
+                    const impactEmoji = m.isPositiveCorrelation ? '✓' : '✗';
+                    const impactColor = m.isPositiveCorrelation ? '#2e7d32' : '#c62828';
+                    const barWidth = Math.min(Math.abs(m.impactScore), 30);
+
+                    return `
+                        <div class="correlation-item" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div style="font-size: 1.1rem; font-weight: 700; color: ${rank <= 2 ? '#2e7d32' : 'rgba(30,2,64,0.4)'}; min-width: 24px;">#${rank}</div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>${m.icon} ${m.name}</span>
+                                    <span style="color: ${impactColor}; font-weight: 600;">${impactEmoji} ${Math.abs(m.percentDiff)}%</span>
                                 </div>
-                                <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 8px;">
-                                    Loss weeks: ${data.avgOnLoss.toLocaleString()}${label.unit} · Gain weeks: ${data.avgOnGain.toLocaleString()}${label.unit}
+                                <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">
+                                    Best weeks: ${m.avgOnBest.toLocaleString()}${m.unit} · Other: ${m.avgOnOther.toLocaleString()}${m.unit}
                                 </div>
-                                <div class="correlation-bar">
-                                    <div class="correlation-fill ${isPositive ? 'positive' : 'negative'}" style="width: ${Math.min(Math.abs(data.percentDiff), 50)}%;"></div>
+                                <div style="height: 4px; background: rgba(30,2,64,0.1); border-radius: 2px; margin-top: 4px;">
+                                    <div style="height: 100%; width: ${barWidth}%; background: ${impactColor}; border-radius: 2px;"></div>
                                 </div>
                             </div>
-                        `;
-                    }).join('');
+                        </div>
+                    `;
+                }).join('');
+
+                correlationContainer.innerHTML = html;
             }
 
             // Generate text insights
@@ -3516,30 +3592,63 @@ Important:
             const insightsContainer = document.getElementById('key-insights');
             const insights = [];
 
-            if (correlations) {
-                if (correlations.avgSteps && correlations.avgSteps.difference > 500) {
-                    insights.push(`📍 When you average <strong>${correlations.avgSteps.avgOnLoss.toLocaleString()} steps</strong> (vs ${correlations.avgSteps.avgOnGain.toLocaleString()}), you tend to lose weight that week.`);
+            if (correlations && correlations.metrics && correlations.metrics.length > 0) {
+                const s = correlations.summary;
+                const topMetrics = correlations.metrics.filter(m => m.isPositiveCorrelation).slice(0, 2);
+                const bottomMetrics = correlations.metrics.filter(m => !m.isPositiveCorrelation);
+
+                // What's working
+                if (topMetrics.length > 0) {
+                    const top = topMetrics[0];
+                    if (top.key === 'avgCalories') {
+                        insights.push(`<strong>🎯 Focus on calories.</strong> Your best weeks averaged <strong>${top.avgOnBest.toLocaleString()} kcal/day</strong>. This is ${Math.abs(top.percentDiff)}% ${top.lowerIsBetter ? 'lower' : 'higher'} than other weeks and has the biggest impact on your results.`);
+                    } else if (top.key === 'avgSteps') {
+                        insights.push(`<strong>🎯 Steps matter most.</strong> Your best weeks averaged <strong>${top.avgOnBest.toLocaleString()} steps/day</strong>. That's ${Math.abs(top.percentDiff)}% more than other weeks. Keep prioritizing movement!`);
+                    } else if (top.key === 'totalWorkouts') {
+                        insights.push(`<strong>🎯 Workouts are key.</strong> Your best weeks had <strong>${top.avgOnBest} workouts</strong> vs ${top.avgOnOther} in other weeks. Consistency with exercise drives your results.`);
+                    } else if (top.key === 'avgMinutes') {
+                        insights.push(`<strong>🎯 Heart zone training works.</strong> Your best weeks had <strong>${top.avgOnBest} minutes</strong> in zone vs ${top.avgOnOther} in other weeks. High-intensity exercise is paying off!`);
+                    } else if (top.key === 'avgProtein') {
+                        insights.push(`<strong>🎯 Protein helps.</strong> Your best weeks averaged <strong>${top.avgOnBest}g protein/day</strong>. Higher protein intake correlates with better weight loss.`);
+                    }
+
+                    if (topMetrics.length > 1) {
+                        const second = topMetrics[1];
+                        insights.push(`<strong>Also important:</strong> ${second.icon} ${second.name} (${Math.abs(second.percentDiff)}% difference between best and other weeks).`);
+                    }
                 }
 
-                if (correlations.avgCalories && correlations.avgCalories.difference < -100) {
-                    insights.push(`🍽️ Weeks where you average <strong>${correlations.avgCalories.avgOnLoss.toLocaleString()} kcal</strong> tend to result in weight loss.`);
+                // What doesn't seem to matter as much
+                if (bottomMetrics.length > 0) {
+                    const low = bottomMetrics[bottomMetrics.length - 1];
+                    if (Math.abs(low.impactScore) < 5) {
+                        insights.push(`<strong>Less critical:</strong> ${low.icon} ${low.name} doesn't show a strong correlation with your weight loss. Don't stress about optimizing this one.`);
+                    }
                 }
 
-                if (correlations.avgProtein && correlations.avgProtein.difference > 5) {
-                    insights.push(`🥩 Higher protein intake (<strong>${correlations.avgProtein.avgOnLoss}g</strong> vs ${correlations.avgProtein.avgOnGain}g) correlates with weight loss weeks.`);
+                // Actionable targets
+                const calorieMetric = correlations.metrics.find(m => m.key === 'avgCalories');
+                const stepsMetric = correlations.metrics.find(m => m.key === 'avgSteps');
+                const workoutMetric = correlations.metrics.find(m => m.key === 'totalWorkouts');
+
+                let targets = [];
+                if (calorieMetric && calorieMetric.isPositiveCorrelation) {
+                    targets.push(`~${calorieMetric.avgOnBest.toLocaleString()} kcal/day`);
+                }
+                if (stepsMetric && stepsMetric.isPositiveCorrelation) {
+                    targets.push(`${stepsMetric.avgOnBest.toLocaleString()}+ steps`);
+                }
+                if (workoutMetric && workoutMetric.isPositiveCorrelation) {
+                    targets.push(`${workoutMetric.avgOnBest}+ workouts/week`);
                 }
 
-                if (correlations.totalWorkouts && correlations.totalWorkouts.avgOnLoss > correlations.totalWorkouts.avgOnGain) {
-                    insights.push(`🏋🏽‍♀️ You lose weight in weeks with <strong>${correlations.totalWorkouts.avgOnLoss} workouts</strong> vs ${correlations.totalWorkouts.avgOnGain} workouts.`);
-                }
-
-                if (correlations.avgMinutes && correlations.avgMinutes.difference > 5) {
-                    insights.push(`❤️ More heart zone minutes (<strong>${correlations.avgMinutes.avgOnLoss} min</strong> vs ${correlations.avgMinutes.avgOnGain} min) correlates with weight loss.`);
+                if (targets.length > 0) {
+                    insights.push(`<strong>🎯 Your winning formula:</strong> ${targets.join(' · ')}`);
                 }
             }
 
             if (insights.length === 0) {
-                insights.push('Keep tracking to see personalized insights about what works for your weight loss goals!');
+                insights.push('Keep tracking to see personalized insights about what drives your weight loss!');
             }
 
             insightsContainer.innerHTML = insights.map(insight => `
