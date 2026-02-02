@@ -1825,7 +1825,11 @@
         }
 
         function formatDateKey(date) {
-            return date.toISOString().split('T')[0];
+            // Use local date components to avoid timezone issues
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function formatDisplayDate(date) {
@@ -2969,15 +2973,16 @@ Important:
                             }
                         }
 
-                        if (weekCount > 0) {
+                        // Only show data point if there's actual valid data for this week
+                        if (weekCount > 0 && validCount > 0) {
                             // For workouts, show total; for restingHR, average valid values; for others, average over all days
                             let dataValue;
                             if (type === 'workoutCount') {
                                 dataValue = weekTotal;
-                            } else if (type === 'restingHR' && validCount > 0) {
+                            } else if (type === 'restingHR') {
                                 dataValue = Math.round(weekTotal / validCount);
                             } else {
-                                dataValue = validCount > 0 ? Math.round(weekTotal / weekCount) : 0;
+                                dataValue = Math.round(weekTotal / weekCount);
                             }
                             data.push(dataValue);
                             // Show first date of the week as label
@@ -3373,6 +3378,12 @@ Important:
                 const weekEnd = new Date(currentWeekStart);
                 weekEnd.setDate(weekEnd.getDate() + 6);
 
+                // Skip the current incomplete week (if week end is in the future)
+                if (weekEnd > today) {
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                    continue;
+                }
+
                 const weekData = {
                     startDate: new Date(currentWeekStart),
                     endDate: weekEnd,
@@ -3385,11 +3396,10 @@ Important:
                     workouts: []
                 };
 
-                // Collect daily data for this week
+                // Collect daily data for this week (all 7 days)
                 for (let d = 0; d < 7; d++) {
                     const date = new Date(currentWeekStart);
                     date.setDate(date.getDate() + d);
-                    if (date > today) break;
 
                     const weight = loadData('weight', date);
                     if (weight) weekData.weights.push(weight);
@@ -3411,11 +3421,12 @@ Important:
                     weekData.workouts.push(workouts.length);
                 }
 
-                // Calculate weekly averages
-                const avg = arr => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+                // Calculate weekly averages (only if enough data points - at least 3 days)
+                const minDays = 3;
+                const avg = arr => arr.length >= minDays ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
                 const sum = arr => arr.reduce((a, b) => a + b, 0);
 
-                weekData.avgWeight = avg(weekData.weights);
+                weekData.avgWeight = weekData.weights.length > 0 ? weekData.weights.reduce((a, b) => a + b, 0) / weekData.weights.length : null;
                 weekData.avgCalories = avg(weekData.calories);
                 weekData.avgProtein = avg(weekData.protein);
                 weekData.avgSteps = avg(weekData.steps);
@@ -3423,6 +3434,7 @@ Important:
                 weekData.avgRestingHR = avg(weekData.restingHR);
                 weekData.totalWorkouts = sum(weekData.workouts);
 
+                // Only include week if it has weight data
                 if (weekData.avgWeight !== null) {
                     weeklyData.push(weekData);
                 }
