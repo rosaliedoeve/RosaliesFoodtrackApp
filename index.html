@@ -510,8 +510,9 @@
         }
 
         .food-item {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr 60px 40px;
+            gap: 8px;
             align-items: center;
             padding: 12px 0;
             border-bottom: 1px solid rgba(30, 2, 64, 0.1);
@@ -534,6 +535,7 @@
         .food-item-calories {
             font-weight: 600;
             font-size: 1rem;
+            text-align: right;
         }
 
         .food-item-delete {
@@ -542,7 +544,7 @@
             color: #ff4444;
             cursor: pointer;
             padding: 5px;
-            margin-left: 10px;
+            text-align: center;
         }
 
         /* Preset Food Search */
@@ -1160,8 +1162,8 @@
                             <span class="donut-unit">g</span>
                         </div>
                     </div>
-                    <div class="donut-label">Protein <span id="home-protein-percent" style="opacity: 0.7; font-size: 0.85em;"></span></div>
-                    <div class="donut-sublabel"><span id="home-protein-goal">75</span>g goal</div>
+                    <div class="donut-label">Protein</div>
+                    <div class="donut-sublabel"><span id="home-protein-percent">0</span>% of kcal</div>
                 </div>
             </div>
         </div>
@@ -2026,11 +2028,10 @@
             // Update food card with donut charts
             document.getElementById('home-calories').textContent = Math.round(totalCalories);
             document.getElementById('home-protein').textContent = Math.round(totalProtein);
-            document.getElementById('home-protein-goal').textContent = goals.protein;
 
             // Calculate and display protein %
             const proteinPercent = totalCalories > 0 ? Math.round((totalProtein * 4 / totalCalories) * 100) : 0;
-            document.getElementById('home-protein-percent').textContent = totalCalories > 0 ? `(${proteinPercent}%)` : '';
+            document.getElementById('home-protein-percent').textContent = proteinPercent;
 
             const caloriesRemaining = goals.calories - totalCalories;
             document.getElementById('home-calories-remaining').textContent =
@@ -2509,16 +2510,19 @@
                 return;
             }
 
-            list.innerHTML = foods.map((f, i) => `
+            list.innerHTML = foods.map((f, i) => {
+                const proteinPercent = f.calories > 0 ? Math.round((f.protein * 4 / f.calories) * 100) : 0;
+                return `
                 <div class="food-item">
                     <div class="food-item-info">
                         <h4>${f.name}</h4>
-                        <p>${f.serving} · ${f.protein}g protein</p>
+                        <p>${f.serving} · ${f.protein}g protein (${proteinPercent}%)</p>
                     </div>
                     <div class="food-item-calories">${f.calories}</div>
                     <button class="food-item-delete" onclick="deleteFood(${i})">🗑️</button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // ==================== CUSTOM PRESETS ====================
@@ -3692,9 +3696,6 @@ Important:
                         verdict = '👎';
                         explanation = `✗ ${m.lowerIsBetter ? 'Higher' : 'Lower'} ${m.name.toLowerCase()} on best weeks - unexpected`;
                     }
-
-                    // Progress bar width based on percentage difference (max 50%)
-                    const barWidth = Math.min(diffPercent, 50);
 
                     // Badge text
                     const badgeText = isMeaningfulDifference ? `${diffPercent}% ${direction}` : 'No difference';
