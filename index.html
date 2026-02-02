@@ -1696,6 +1696,21 @@
         </div>
     </div>
 
+    <!-- Modal for Hike Duration -->
+    <div class="modal-overlay" id="hike-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>🥾 Log Hike</h2>
+                <button class="modal-close" onclick="closeHikeModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="hike-duration" placeholder="e.g., 180" min="1" value="180">
+            </div>
+            <button class="btn btn-primary" onclick="saveHike()" style="width: 100%;">Log Hike</button>
+        </div>
+    </div>
+
     <script>
         // ==================== DATA STRUCTURES ====================
         let currentDate = new Date();
@@ -2196,12 +2211,17 @@
 
         function renderWorkoutGrid() {
             const grid = document.getElementById('workout-grid');
-            let html = Object.entries(WORKOUT_TYPES).map(([key, workout]) => `
-                <div class="workout-option" data-type="${key}" onclick="selectWorkout('${key}')">
+            let html = Object.entries(WORKOUT_TYPES).map(([key, workout]) => {
+                // Hike has variable duration, open special modal
+                const clickHandler = key === 'hike' ? `openHikeModal()` : `selectWorkout('${key}')`;
+                const durationText = key === 'hike' ? 'Variable' : `${workout.duration} min`;
+                return `
+                <div class="workout-option" data-type="${key}" onclick="${clickHandler}">
                     <div class="workout-name">${workout.emoji} ${workout.name}</div>
-                    <div class="workout-duration">${workout.duration} min</div>
+                    <div class="workout-duration">${durationText}</div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             // Add custom workout option
             html += `
@@ -2271,6 +2291,39 @@
 
             saveData('workouts', workouts, currentDate);
             closeCustomWorkoutModal();
+            updateHomeDisplay();
+        }
+
+        function openHikeModal() {
+            closeWorkoutModal();
+            document.getElementById('hike-duration').value = 180;
+            document.getElementById('hike-modal-overlay').classList.add('active');
+            document.getElementById('hike-duration').focus();
+        }
+
+        function closeHikeModal() {
+            document.getElementById('hike-modal-overlay').classList.remove('active');
+            document.getElementById('hike-duration').value = '';
+        }
+
+        function saveHike() {
+            const duration = parseInt(document.getElementById('hike-duration').value) || 0;
+
+            if (!duration) {
+                alert('Please enter the hike duration');
+                return;
+            }
+
+            const workouts = loadData('workouts', currentDate) || [];
+            workouts.push({
+                type: 'hike',
+                name: WORKOUT_TYPES.hike.name,
+                duration: duration,
+                timestamp: Date.now()
+            });
+
+            saveData('workouts', workouts, currentDate);
+            closeHikeModal();
             updateHomeDisplay();
         }
 
