@@ -3848,7 +3848,9 @@ Important:
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
-                        files: [file]
+                        files: [file],
+                        title: 'Health Tracker Backup',
+                        text: 'My health tracker data backup'
                     });
                     return;
                 } catch (err) {
