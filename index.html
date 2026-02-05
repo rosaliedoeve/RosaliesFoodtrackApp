@@ -1029,6 +1029,28 @@
         }
 
         /* Insights Page */
+        .refresh-insights-btn {
+            width: 100%;
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .refresh-insights-btn:active {
+            transform: scale(0.98);
+        }
+
         .insight-card {
             background: var(--white);
             border-radius: 20px;
@@ -1444,6 +1466,11 @@
 
     <!-- Insights Page -->
     <div id="page-insights" class="page">
+        <button class="refresh-insights-btn" onclick="updateInsightsPage()">
+            <span>🔄</span>
+            <span>Refresh Insights</span>
+        </button>
+
         <div class="insight-card">
             <h3>🪆 Weight Progress</h3>
             <div class="insight-stat">
@@ -1461,6 +1488,16 @@
             <div class="insight-stat">
                 <span class="label">Weekly average change</span>
                 <span class="value" id="insight-weekly-change">--</span>
+            </div>
+        </div>
+
+        <div class="insight-card">
+            <h3>📊 Weekly Breakdown</h3>
+            <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 15px;">
+                Average weight and week-over-week changes
+            </p>
+            <div id="weekly-breakdown-table" style="overflow-x: auto;">
+                <!-- Populated by JS -->
             </div>
         </div>
 
@@ -3529,28 +3566,32 @@ Important:
             ];
 
             // Calculate week-over-week weight changes
+            // For each week (starting from week 2), calculate weight loss from previous week
             const weightChanges = [];
             for (let i = 1; i < weeklyData.length; i++) {
                 if (weeklyData[i].avgWeight && weeklyData[i-1].avgWeight) {
+                    // Weight loss = previous week's weight - current week's weight
+                    // Positive value = weight loss, negative = weight gain
+                    const weightLoss = weeklyData[i-1].avgWeight - weeklyData[i].avgWeight;
                     weightChanges.push({
-                        change: weeklyData[i].avgWeight - weeklyData[i-1].avgWeight,
-                        week: weeklyData[i-1]
+                        weightLoss: weightLoss,
+                        week: weeklyData[i]  // Associate with CURRENT week's behaviors, not previous
                     });
                 }
             }
 
             if (weightChanges.length < 2) return null;
 
-            // Sort by weight change (most loss first)
-            const sortedWeeks = [...weightChanges].sort((a, b) => a.change - b.change);
+            // Sort by weight loss (most loss first = highest positive values)
+            const sortedWeeks = [...weightChanges].sort((a, b) => b.weightLoss - a.weightLoss);
             const midpoint = Math.floor(sortedWeeks.length / 2);
 
             // Split into "best weeks" (more loss) and "other weeks" (less loss or gain)
             const bestWeeks = sortedWeeks.slice(0, midpoint);
             const otherWeeks = sortedWeeks.slice(midpoint);
 
-            const avgBestLoss = bestWeeks.reduce((sum, w) => sum + w.change, 0) / bestWeeks.length;
-            const avgOtherChange = otherWeeks.reduce((sum, w) => sum + w.change, 0) / otherWeeks.length;
+            const avgBestLoss = bestWeeks.reduce((sum, w) => sum + w.weightLoss, 0) / bestWeeks.length;
+            const avgOtherChange = otherWeeks.reduce((sum, w) => sum + w.weightLoss, 0) / otherWeeks.length;
 
             // Calculate correlation strength for each metric
             const correlations = [];
@@ -3609,10 +3650,52 @@ Important:
         function updateInsightsPage() {
             const weeklyData = calculateWeeklyData();
 
+            // Debug: log weekly data to understand what's happening
+            console.log('=== INSIGHTS DEBUG ===');
+            console.log('Total weeks with weight data:', weeklyData.length);
+            weeklyData.forEach((w, i) => {
+                const weekLabel = `${w.startDate.toLocaleDateString()} - ${w.endDate.toLocaleDateString()}`;
+                console.log(`Week ${i + 1} (${weekLabel}):`, {
+                    avgWeight: w.avgWeight?.toFixed(1),
+                    avgCalories: w.avgCalories,
+                    avgProtein: w.avgProtein,
+                    caloriesDaysLogged: w.calories.length,
+                    proteinDaysLogged: w.protein.length
+                });
+            });
+
+            const debugCorrelations = calculateCorrelations(weeklyData);
+            console.log('Correlations result:', debugCorrelations);
+            if (debugCorrelations) {
+                console.log('Best weeks count:', debugCorrelations.summary.bestWeeksCount);
+                console.log('Metrics with food data:', debugCorrelations.metrics.filter(m => m.key === 'avgCalories' || m.key === 'avgProtein'));
+            }
+            console.log('=== END DEBUG ===');
+
             // Weight progress
             if (weeklyData.length > 0) {
                 const firstWeight = weeklyData[0].avgWeight;
-                const lastWeight = weeklyData[weeklyData.length - 1].avgWeight;
+
+                // Get the most recent weight entry (including from current incomplete week)
+                const startDate = new Date('2025-12-13');
+                const today = new Date();
+                let mostRecentWeight = null;
+                let mostRecentDate = null;
+
+                // Search backwards from today to find the most recent weight entry
+                for (let d = 0; d <= Math.ceil((today - startDate) / (1000 * 60 * 60 * 24)); d++) {
+                    const checkDate = new Date(today);
+                    checkDate.setDate(checkDate.getDate() - d);
+                    const weight = loadData('weight', checkDate);
+                    if (weight) {
+                        mostRecentWeight = weight;
+                        mostRecentDate = checkDate;
+                        break;
+                    }
+                }
+
+                // Use most recent weight if found, otherwise fall back to last complete week
+                const lastWeight = mostRecentWeight !== null ? mostRecentWeight : weeklyData[weeklyData.length - 1].avgWeight;
                 const totalChange = lastWeight - firstWeight;
                 const weeksElapsed = weeklyData.length;
                 const weeklyChange = totalChange / weeksElapsed;
@@ -3652,19 +3735,22 @@ Important:
                 html += correlations.metrics.map((m, index) => {
                     // Handle metrics without comparison data
                     if (!m.hasComparison) {
-                        const avgValue = m.avgOnBest !== null ? m.avgOnBest : m.avgOnOther;
-                        const weeksCount = m.bestWeeksCount + m.otherWeeksCount;
+                        const hasBestData = m.avgOnBest !== null;
+                        const avgValue = hasBestData ? m.avgOnBest : m.avgOnOther;
+                        const weeksCount = hasBestData ? m.bestWeeksCount : m.otherWeeksCount;
+                        const weeksLabel = hasBestData ? 'best' : 'other';
+
                         return `
-                            <div class="correlation-item" style="margin-bottom: 16px; padding: 12px; background: rgba(30,2,64,0.03); border-radius: 10px; opacity: 0.6;">
+                            <div class="correlation-item" style="margin-bottom: 16px; padding: 12px; background: rgba(102, 126, 234, 0.1); border-radius: 10px; border-left: 3px solid #667eea;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                     <span style="font-weight: 600;">${m.icon} ${m.name}</span>
-                                    <span style="font-size: 0.85rem; color: #666;">⚠️ Limited data</span>
+                                    <span style="font-size: 0.85rem; color: #667eea;">📊 Tracking</span>
                                 </div>
-                                <div style="font-size: 0.8rem; opacity: 0.7;">
-                                    Average: <strong>${avgValue !== null ? avgValue.toLocaleString() + m.unit : 'N/A'}</strong> (${weeksCount} weeks with data)
+                                <div style="font-size: 0.85rem; margin-bottom: 6px;">
+                                    Your <strong style="color: ${hasBestData ? '#5DD07C' : '#666'};">${weeksLabel} weeks</strong> averaged: <strong>${avgValue !== null ? avgValue.toLocaleString() : 'N/A'}${m.unit}</strong>
                                 </div>
-                                <div style="font-size: 0.75rem; color: #666; margin-top: 4px;">
-                                    Not enough data to compare best vs other weeks. Keep logging!
+                                <div style="font-size: 0.75rem; color: #666;">
+                                    ${weeksCount} weeks with data. Keep logging to see comparisons!
                                 </div>
                             </div>
                         `;
@@ -3735,6 +3821,9 @@ Important:
                 const topMetrics = significantMetrics.filter(m => m.isPositiveCorrelation).slice(0, 2);
                 const noImpactMetrics = correlations.metrics.filter(m => m.hasComparison && Math.abs(m.percentDiff) < SIGNIFICANCE_THRESHOLD);
 
+                // Metrics with data but no comparison (only in best or only in other weeks)
+                const limitedDataMetrics = correlations.metrics.filter(m => !m.hasComparison && (m.avgOnBest !== null || m.avgOnOther !== null));
+
                 // What's working
                 if (topMetrics.length > 0) {
                     const top = topMetrics[0];
@@ -3764,23 +3853,47 @@ Important:
                     insights.push(`<strong>No clear impact:</strong> ${noImpactNames} showed no meaningful difference between your best and other weeks. These may not be key factors for your weight loss.`);
                 }
 
-                // Actionable targets (only from significant metrics)
-                const calorieMetric = significantMetrics.find(m => m.key === 'avgCalories');
-                const stepsMetric = significantMetrics.find(m => m.key === 'avgSteps');
-                const workoutMetric = significantMetrics.find(m => m.key === 'totalWorkouts');
-                const proteinPercentMetric = significantMetrics.find(m => m.key === 'avgProteinPercent');
+                // Metrics with limited data (only in best or other weeks)
+                if (limitedDataMetrics.length > 0) {
+                    limitedDataMetrics.forEach(m => {
+                        const hasBestData = m.avgOnBest !== null;
+                        const avgValue = hasBestData ? m.avgOnBest : m.avgOnOther;
+                        const weeksLabel = hasBestData ? 'best' : 'other';
+                        const weeksCount = hasBestData ? m.bestWeeksCount : m.otherWeeksCount;
+
+                        if (m.key === 'avgCalories') {
+                            insights.push(`<strong>📊 Calories tracked:</strong> Your ${weeksLabel} weeks averaged <strong>${avgValue.toLocaleString()} kcal/day</strong> (${weeksCount} weeks). Keep logging in other weeks to see patterns!`);
+                        } else if (m.key === 'avgProtein') {
+                            insights.push(`<strong>📊 Protein tracked:</strong> Your ${weeksLabel} weeks averaged <strong>${avgValue}g protein/day</strong> (${weeksCount} weeks). Keep logging to compare!`);
+                        } else if (m.key === 'avgProteinPercent') {
+                            insights.push(`<strong>📊 Protein % tracked:</strong> Your ${weeksLabel} weeks had <strong>${avgValue}% protein</strong> (${weeksCount} weeks).`);
+                        } else {
+                            insights.push(`<strong>📊 ${m.icon} ${m.name}:</strong> Your ${weeksLabel} weeks averaged <strong>${avgValue}${m.unit}</strong> (${weeksCount} weeks).`);
+                        }
+                    });
+                }
+
+                // Actionable targets (from significant metrics or limited data in best weeks)
+                const calorieMetric = significantMetrics.find(m => m.key === 'avgCalories') ||
+                                     limitedDataMetrics.find(m => m.key === 'avgCalories' && m.avgOnBest !== null);
+                const stepsMetric = significantMetrics.find(m => m.key === 'avgSteps') ||
+                                   limitedDataMetrics.find(m => m.key === 'avgSteps' && m.avgOnBest !== null);
+                const workoutMetric = significantMetrics.find(m => m.key === 'totalWorkouts') ||
+                                     limitedDataMetrics.find(m => m.key === 'totalWorkouts' && m.avgOnBest !== null);
+                const proteinPercentMetric = significantMetrics.find(m => m.key === 'avgProteinPercent') ||
+                                            limitedDataMetrics.find(m => m.key === 'avgProteinPercent' && m.avgOnBest !== null);
 
                 let targets = [];
-                if (calorieMetric && calorieMetric.isPositiveCorrelation) {
+                if (calorieMetric && (calorieMetric.isPositiveCorrelation || !calorieMetric.hasComparison)) {
                     targets.push(`~${calorieMetric.avgOnBest.toLocaleString()} kcal/day`);
                 }
-                if (proteinPercentMetric && proteinPercentMetric.isPositiveCorrelation) {
+                if (proteinPercentMetric && (proteinPercentMetric.isPositiveCorrelation || !proteinPercentMetric.hasComparison)) {
                     targets.push(`${proteinPercentMetric.avgOnBest}%+ protein`);
                 }
-                if (stepsMetric && stepsMetric.isPositiveCorrelation) {
+                if (stepsMetric && (stepsMetric.isPositiveCorrelation || !stepsMetric.hasComparison)) {
                     targets.push(`${stepsMetric.avgOnBest.toLocaleString()}+ steps`);
                 }
-                if (workoutMetric && workoutMetric.isPositiveCorrelation) {
+                if (workoutMetric && (workoutMetric.isPositiveCorrelation || !workoutMetric.hasComparison)) {
                     targets.push(`${workoutMetric.avgOnBest}+ workouts/week`);
                 }
 
