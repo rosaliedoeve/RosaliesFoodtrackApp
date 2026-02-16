@@ -442,6 +442,10 @@
             background: var(--white);
             padding: 10px;
             border-radius: 12px;
+            position: sticky;
+            top: 60px;
+            z-index: 99;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .date-picker button {
@@ -599,6 +603,10 @@
             background: var(--white);
             padding: 8px;
             border-radius: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .chart-period-tabs button {
@@ -1029,28 +1037,6 @@
         }
 
         /* Insights Page */
-        .refresh-insights-btn {
-            width: 100%;
-            padding: 12px 20px;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .refresh-insights-btn:active {
-            transform: scale(0.98);
-        }
-
         .insight-card {
             background: var(--white);
             border-radius: 20px;
@@ -1139,6 +1125,45 @@
 
         .correlation-fill.negative {
             background: #f44336;
+        }
+
+        /* Weekly Data Table */
+        #weekly-data-table th,
+        #weekly-data-table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(30, 2, 64, 0.1);
+        }
+
+        #weekly-data-table th {
+            background: rgba(30, 2, 64, 0.05);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #weekly-data-table tr:hover {
+            background: rgba(30, 2, 64, 0.02);
+        }
+
+        #weekly-data-table td {
+            white-space: nowrap;
+        }
+
+        #weekly-data-table .week-date {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        #weekly-data-table .positive-change {
+            color: #5DD07C;
+            font-weight: 600;
+        }
+
+        #weekly-data-table .negative-change {
+            color: #f44336;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -1427,6 +1452,16 @@
         </div>
 
         <div class="chart-container">
+            <div class="chart-header">
+                <h3>🏋🏽‍♀️ Workouts</h3>
+                <span class="chart-avg" id="avg-workouts"></span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="chart-workouts"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
             <h3>🥩 Protein</h3>
             <div class="chart-wrapper">
                 <canvas id="chart-protein"></canvas>
@@ -1452,25 +1487,10 @@
                 <canvas id="chart-resting-hr"></canvas>
             </div>
         </div>
-
-        <div class="chart-container">
-            <div class="chart-header">
-                <h3>🏋🏽‍♀️ Workouts</h3>
-                <span class="chart-avg" id="avg-workouts"></span>
-            </div>
-            <div class="chart-wrapper">
-                <canvas id="chart-workouts"></canvas>
-            </div>
-        </div>
     </div>
 
     <!-- Insights Page -->
     <div id="page-insights" class="page">
-        <button class="refresh-insights-btn" onclick="updateInsightsPage()">
-            <span>🔄</span>
-            <span>Refresh Insights</span>
-        </button>
-
         <div class="insight-card">
             <h3>🪆 Weight Progress</h3>
             <div class="insight-stat">
@@ -1490,17 +1510,6 @@
                 <span class="value" id="insight-weekly-change">--</span>
             </div>
         </div>
-
-        <div class="insight-card">
-            <h3>📊 Weekly Breakdown</h3>
-            <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 15px;">
-                Average weight and week-over-week changes
-            </p>
-            <div id="weekly-breakdown-table" style="overflow-x: auto;">
-                <!-- Populated by JS -->
-            </div>
-        </div>
-
         <div class="insight-card">
             <h3>🪸 What Drives Your Results</h3>
             <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 15px;">
@@ -1515,6 +1524,24 @@
             <h3>💡 What This Means For You</h3>
             <div id="key-insights">
                 <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Weekly Data Table -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button onclick="toggleWeeklyDataTable()" style="padding: 12px 24px; background: var(--text-color); color: var(--white); border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                <span id="weekly-data-toggle-text">📊 View Weekly Data</span>
+            </button>
+        </div>
+
+        <div id="weekly-data-container" style="display: none;">
+            <div class="insight-card">
+                <h3>📊 Weekly Data Breakdown</h3>
+                <div style="overflow-x: auto;">
+                    <table id="weekly-data-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <!-- Populated by JS -->
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -1975,6 +2002,81 @@
                 localStorage.removeItem('health_preset_foods');
                 filterPresetList(''); // Refresh the preset list in settings
                 alert('Food database has been reset to default!');
+            }
+        }
+
+        async function updateFiberData() {
+            if (!confirm('This will update all your preset foods and historical meals with fiber data from the database. This may take a moment. Continue?')) {
+                return;
+            }
+
+            try {
+                // Load fiber database from JSON
+                const response = await fetch('foods-database.json');
+                const foodsWithFiber = await response.json();
+
+                // Step 1: Update preset foods
+                let presetFoods = getPresetFoods();
+                presetFoods = presetFoods.map(preset => {
+                    const match = foodsWithFiber.find(f =>
+                        f.name === preset.name &&
+                        f.calories === preset.calories &&
+                        f.protein === preset.protein
+                    );
+                    if (match && match.fiber !== undefined) {
+                        return { ...preset, fiber: match.fiber };
+                    }
+                    return preset.fiber !== undefined ? preset : { ...preset, fiber: 0 };
+                });
+                savePresetFoods(presetFoods);
+
+                // Step 2: Update all historical food entries
+                let updatedMeals = 0;
+                let totalMeals = 0;
+
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('health_foods_')) {
+                        const foods = JSON.parse(localStorage.getItem(key));
+
+                        foods.forEach(food => {
+                            totalMeals++;
+                            if (food.fiber === undefined || food.fiber === null) {
+                                // Try to match to updated preset foods
+                                const foodNameClean = food.name.replace(/^\d+×\s*/, '').toLowerCase();
+                                const match = presetFoods.find(preset => {
+                                    const presetNameClean = preset.name.toLowerCase();
+                                    if (foodNameClean.includes(presetNameClean) || presetNameClean.includes(foodNameClean)) {
+                                        const calorieRatio = food.calories / preset.calories;
+                                        const proteinRatio = food.protein / (preset.protein || 1);
+                                        return Math.abs(calorieRatio - proteinRatio) < 0.15;
+                                    }
+                                    return false;
+                                });
+
+                                if (match && match.fiber) {
+                                    const multiplier = food.calories / (match.calories || 1);
+                                    food.fiber = match.fiber * multiplier;
+                                    updatedMeals++;
+                                } else {
+                                    food.fiber = 0;
+                                }
+                            }
+                        });
+
+                        localStorage.setItem(key, JSON.stringify(foods));
+                    }
+                }
+
+                // Refresh displays
+                filterPresetList('');
+                updateHomeDisplay();
+                updateFoodDisplay();
+
+                alert(`Fiber data updated!\n\nPreset foods: Updated\nHistorical meals: ${updatedMeals} of ${totalMeals} updated with fiber values`);
+            } catch (error) {
+                console.error('Error updating fiber data:', error);
+                alert('Error loading fiber database. Please make sure foods-database.json exists in the same folder as index.html');
             }
         }
 
@@ -2760,13 +2862,13 @@
 
             // Build the preset foods context
             const presets = getPresetFoods();
-            const presetList = presets.map(p => `- ${p.name}: ${p.serving}, ${p.calories} kcal, ${p.protein}g protein`).join('\n');
+            const presetList = presets.map(p => `- ${p.name}: ${p.serving}, ${p.calories} kcal, ${p.protein}g protein, ${p.fiber || 0}g fiber`).join('\n');
 
             const systemPrompt = `You are a nutrition analysis assistant. The user will describe a meal they ate. Your job is to:
 
 1. Break the meal down into individual food items/components
 2. For each item, first check if it matches something in the user's preset food database (provided below). If there's a close match, use those exact values.
-3. For items NOT in the database, estimate the calories and protein based on typical nutritional information.
+3. For items NOT in the database, estimate the calories, protein, and fiber based on typical nutritional information.
 4. Return ONLY valid JSON in this exact format, no other text:
 
 {
@@ -2776,6 +2878,7 @@
       "serving": "serving description",
       "calories": 123,
       "protein": 12,
+      "fiber": 3.5,
       "source": "preset" or "estimated"
     }
   ]
@@ -2787,6 +2890,7 @@ ${presetList}
 Important:
 - Match generously with presets (e.g., "banana" should match "Small banana" or "Large banana")
 - For estimated items, use realistic portion sizes based on the description
+- Always include fiber estimates (use 0 for foods with no fiber like meat, eggs, dairy, oils)
 - Always return valid JSON only, no explanations`;
 
             try {
@@ -2987,10 +3091,11 @@ Important:
 
         function getDayValue(type, date) {
             let value;
-            if (type === 'calories' || type === 'protein') {
+            if (type === 'calories' || type === 'protein' || type === 'fiber') {
                 const foods = loadData('foods', date) || [];
                 if (type === 'calories') value = foods.reduce((sum, f) => sum + f.calories, 0);
-                else value = foods.reduce((sum, f) => sum + f.protein, 0);
+                else if (type === 'protein') value = foods.reduce((sum, f) => sum + f.protein, 0);
+                else if (type === 'fiber') value = foods.reduce((sum, f) => sum + (f.fiber || 0), 0);
             } else if (type === 'minutes') {
                 const data = getMinutesData(date);
                 value = data.minutes;
@@ -3291,6 +3396,33 @@ Important:
                 borderSkipped: false
             };
 
+            // Special handling for resting heart rate to show variations more clearly
+            let yAxisConfig = {
+                beginAtZero: chartType !== 'line',
+                grid: { color: 'rgba(30, 2, 64, 0.1)' }
+            };
+
+            if (type === 'restingHR') {
+                // Calculate min and max from actual data
+                const validValues = chartData.data.filter(v => v !== null && v !== undefined && v > 0);
+                if (validValues.length > 0) {
+                    const minValue = Math.min(...validValues);
+                    const maxValue = Math.max(...validValues);
+                    const range = maxValue - minValue;
+                    const padding = Math.max(5, range * 0.2); // At least 5 bpm padding
+
+                    yAxisConfig = {
+                        beginAtZero: false,
+                        min: Math.floor(minValue - padding),
+                        max: Math.ceil(maxValue + padding),
+                        grid: { color: 'rgba(30, 2, 64, 0.1)' },
+                        ticks: {
+                            stepSize: 2
+                        }
+                    };
+                }
+            }
+
             charts[canvasId] = new Chart(ctx, {
                 type: chartType,
                 data: {
@@ -3309,10 +3441,7 @@ Important:
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: chartType !== 'line',
-                            grid: { color: 'rgba(30, 2, 64, 0.1)' }
-                        },
+                        y: yAxisConfig,
                         x: {
                             grid: { display: false },
                             ticks: {
@@ -3323,6 +3452,100 @@ Important:
                                     return label || null;
                                 }
                             }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createProteinFiberChart() {
+            const ctx = document.getElementById('chart-protein');
+            if (!ctx) return;
+
+            const proteinData = getChartData('protein');
+            const fiberData = getChartData('fiber');
+            const goals = getGoals();
+
+            if (charts['chart-protein']) {
+                charts['chart-protein'].destroy();
+            }
+
+            // Create goal line for protein
+            const proteinGoalLine = proteinData.labels.map(() => goals.protein);
+            // Create goal line for fiber
+            const fiberGoalLine = fiberData.labels.map(() => goals.fiber);
+
+            charts['chart-protein'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: proteinData.labels,
+                    datasets: [
+                        {
+                            label: 'Protein (g)',
+                            data: proteinData.data,
+                            backgroundColor: '#FFA7A7',
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            order: 3
+                        },
+                        {
+                            label: 'Fiber (g)',
+                            data: fiberData.data,
+                            backgroundColor: '#8BC34A',
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            order: 4
+                        },
+                        {
+                            label: 'Protein Goal',
+                            data: proteinGoalLine,
+                            type: 'line',
+                            borderColor: '#FFA7A7',
+                            borderWidth: 1.5,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false,
+                            order: 1
+                        },
+                        {
+                            label: `Fiber Goal (${goals.fiber}g)`,
+                            data: fiberGoalLine,
+                            type: 'line',
+                            borderColor: '#8BC34A',
+                            borderWidth: 1.5,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false,
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    if (context.dataset.type === 'line') {
+                                        return context.dataset.label;
+                                    }
+                                    return `${context.dataset.label}: ${context.parsed.y}g`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(30, 2, 64, 0.1)' }
                         }
                     }
                 }
@@ -3382,35 +3605,46 @@ Important:
                 charts['chart-workouts'].destroy();
             }
 
+            // Color palette for pie chart
+            const colors = ['#C23C64', '#F17496', '#FFA7A7', '#FFC78C', '#FAEB8E', '#757FEF', '#B88EF9', '#F1ACFF', '#87518C', '#886F8B'];
+
             charts['chart-workouts'] = new Chart(ctx, {
-                type: 'bar',
+                type: 'pie',
                 data: {
                     labels: labels,
                     datasets: [{
                         data: data,
-                        backgroundColor: '#C23C64',
-                        borderRadius: 8,
-                        borderSkipped: false
+                        backgroundColor: colors.slice(0, data.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
                     }]
                 },
                 options: {
-                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(30, 2, 64, 0.1)' },
-                            ticks: {
-                                stepSize: 1,
-                                callback: (value) => Number.isInteger(value) ? value : ''
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                padding: 10,
+                                font: {
+                                    size: 12
+                                },
+                                boxWidth: 15,
+                                boxHeight: 15
                             }
                         },
-                        y: {
-                            grid: { display: false }
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
                         }
                     }
                 }
@@ -3433,6 +3667,8 @@ Important:
 
         function updateChartAverages() {
             const caloriesData = getChartData('calories');
+            const proteinData = getChartData('protein');
+            const fiberData = getChartData('fiber');
             const stepsData = getChartData('steps');
             const minutesData = getChartData('minutes');
             const restingHRData = getChartData('restingHR');
@@ -3450,12 +3686,16 @@ Important:
             };
 
             const avgCalories = calcAvg(caloriesData.data);
+            const avgProtein = calcAvg(proteinData.data);
+            const avgFiber = calcAvg(fiberData.data);
             const avgSteps = calcAvg(stepsData.data);
             const avgMinutes = calcAvg(minutesData.data);
             const avgRestingHR = calcAvg(restingHRData.data);
             const totalWorkouts = calcSum(workoutsData.data);
 
             document.getElementById('avg-calories').textContent = avgCalories > 0 ? `🌀 ${avgCalories.toLocaleString()} kcal` : '';
+            document.getElementById('avg-protein').textContent = avgProtein > 0 ? `🌀 ${avgProtein}g protein` : '';
+            document.getElementById('avg-fiber').textContent = avgFiber > 0 ? `🌀 ${avgFiber}g fiber` : '';
             document.getElementById('avg-steps').textContent = avgSteps > 0 ? `🌀 ${avgSteps.toLocaleString()}` : '';
             document.getElementById('avg-minutes').textContent = avgMinutes > 0 ? `🌀 ${avgMinutes} min` : '';
             document.getElementById('avg-resting-hr').textContent = avgRestingHR > 0 ? `🌀 ${avgRestingHR} bpm` : '';
@@ -3619,10 +3859,20 @@ Important:
                         isPositiveCorrelation = metric.lowerIsBetter ? difference < 0 : difference > 0;
                     }
 
+                    // For workouts, show 1 decimal to reveal small differences
+                    // For other metrics, round to whole numbers
+                    const roundValue = (val) => {
+                        if (val === null) return null;
+                        if (metric.key === 'totalWorkouts') {
+                            return Math.round(val * 10) / 10; // 1 decimal place
+                        }
+                        return Math.round(val);
+                    };
+
                     correlations.push({
                         ...metric,
-                        avgOnBest: avgOnBest !== null ? Math.round(avgOnBest) : null,
-                        avgOnOther: avgOnOther !== null ? Math.round(avgOnOther) : null,
+                        avgOnBest: roundValue(avgOnBest),
+                        avgOnOther: roundValue(avgOnOther),
                         difference: Math.round(difference),
                         percentDiff: percentDiff.toFixed(1),
                         hasComparison: hasComparison,
@@ -3911,6 +4161,110 @@ Important:
             `).join('');
         }
 
+        // ==================== WEEKLY DATA TABLE ====================
+        function toggleWeeklyDataTable() {
+            const container = document.getElementById('weekly-data-container');
+            const toggleText = document.getElementById('weekly-data-toggle-text');
+
+            if (container.style.display === 'none') {
+                populateWeeklyDataTable();
+                container.style.display = 'block';
+                toggleText.textContent = '📊 Hide Weekly Data';
+            } else {
+                container.style.display = 'none';
+                toggleText.textContent = '📊 View Weekly Data';
+            }
+        }
+
+        function populateWeeklyDataTable() {
+            const weeklyData = calculateWeeklyData();
+            const table = document.getElementById('weekly-data-table');
+
+            if (!weeklyData || weeklyData.length === 0) {
+                table.innerHTML = '<tr><td style="text-align: center; padding: 20px;">No weekly data available yet.</td></tr>';
+                return;
+            }
+
+            // Calculate weight changes and identify best weeks
+            const weightChanges = [];
+            for (let i = 1; i < weeklyData.length; i++) {
+                const currentWeek = weeklyData[i];
+                const prevWeek = weeklyData[i - 1];
+                const weightLoss = prevWeek.avgWeight - currentWeek.avgWeight;
+                weightChanges.push({
+                    week: currentWeek,
+                    weightLoss: weightLoss,
+                    index: i
+                });
+            }
+
+            // Sort by weight loss (descending) to find best weeks
+            const sortedByLoss = [...weightChanges].sort((a, b) => b.weightLoss - a.weightLoss);
+            const bestWeeksCount = Math.max(1, Math.ceil(weightChanges.length / 3));
+            const bestWeeksSet = new Set(sortedByLoss.slice(0, bestWeeksCount).map(w => w.index));
+
+            // Build table header
+            let html = `
+                <thead>
+                    <tr>
+                        <th>Week</th>
+                        <th>Avg Weight</th>
+                        <th>Weight Loss</th>
+                        <th>Calories</th>
+                        <th>Protein</th>
+                        <th>Protein %</th>
+                        <th>Steps</th>
+                        <th>Workouts</th>
+                        <th>Zone Min</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            // Sort by most recent first for display
+            const sortedData = [...weeklyData].reverse();
+
+            // Build table rows
+            sortedData.forEach((week, displayIndex) => {
+                const startDate = new Date(week.startDate);
+                const endDate = new Date(week.endDate);
+                const dateStr = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+                // Calculate actual index in original weeklyData array
+                const actualIndex = weeklyData.length - 1 - displayIndex;
+
+                // Calculate weight loss from previous week
+                let weightLoss = '--';
+                let weightLossClass = '';
+                if (actualIndex > 0) {
+                    const prevWeek = weeklyData[actualIndex - 1];
+                    if (week.avgWeight && prevWeek.avgWeight) {
+                        const loss = prevWeek.avgWeight - week.avgWeight;
+                        weightLoss = (loss >= 0 ? '' : '+') + loss.toFixed(2) + ' kg';
+                        // Color based on whether it's a best week
+                        weightLossClass = bestWeeksSet.has(actualIndex) ? 'positive-change' : 'negative-change';
+                    }
+                }
+
+                html += `
+                    <tr>
+                        <td class="week-date">${dateStr}</td>
+                        <td>${week.avgWeight ? week.avgWeight.toFixed(1) + ' kg' : '--'}</td>
+                        <td class="${weightLossClass}">${weightLoss}</td>
+                        <td>${week.avgCalories ? Math.round(week.avgCalories).toLocaleString() : '--'}</td>
+                        <td>${week.avgProtein ? Math.round(week.avgProtein) + 'g' : '--'}</td>
+                        <td>${week.avgProteinPercent ? Math.round(week.avgProteinPercent) + '%' : '--'}</td>
+                        <td>${week.avgSteps ? Math.round(week.avgSteps).toLocaleString() : '--'}</td>
+                        <td>${week.totalWorkouts ? week.totalWorkouts.toFixed(1) : '0.0'}</td>
+                        <td>${week.avgMinutes ? Math.round(week.avgMinutes) : '--'}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
         // ==================== SETTINGS ====================
         function loadGoalsToForm() {
             const goals = getGoals();
@@ -4106,8 +4460,79 @@ Important:
             reader.readAsText(file);
         }
 
+        // ==================== FIBER MIGRATION ====================
+        function migrateFiberData() {
+            // Check if migration has already been done
+            if (localStorage.getItem('fiber_migration_v1_complete')) {
+                return;
+            }
+
+            console.log('Starting fiber data migration...');
+            let updatedCount = 0;
+            let totalFoods = 0;
+
+            // Get the preset foods database for matching
+            const presetFoods = getPresetFoods();
+
+            // Go through all localStorage keys to find food entries
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('health_foods_')) {
+                    try {
+                        const foods = JSON.parse(localStorage.getItem(key));
+                        let modified = false;
+
+                        foods.forEach(food => {
+                            totalFoods++;
+                            // If food doesn't have fiber value, try to find it in database
+                            if (food.fiber === undefined || food.fiber === null) {
+                                // Try to match by name and approximate calories/protein
+                                const match = presetFoods.find(preset => {
+                                    // Check if names match (case insensitive, handle quantity multipliers)
+                                    const foodName = food.name.replace(/^\d+×\s*/, '').toLowerCase();
+                                    const presetName = preset.name.toLowerCase();
+
+                                    // Names should match, and calories/protein should be reasonably close
+                                    // (accounting for quantity multipliers)
+                                    if (foodName.includes(presetName) || presetName.includes(foodName)) {
+                                        // Check if the ratio is similar (within 10% tolerance)
+                                        const calorieRatio = food.calories / preset.calories;
+                                        const proteinRatio = food.protein / preset.protein;
+                                        return Math.abs(calorieRatio - proteinRatio) < 0.1;
+                                    }
+                                    return false;
+                                });
+
+                                if (match) {
+                                    // Calculate the quantity multiplier
+                                    const multiplier = food.calories / match.calories;
+                                    food.fiber = (match.fiber || 0) * multiplier;
+                                    modified = true;
+                                    updatedCount++;
+                                } else {
+                                    // No match found, set fiber to 0
+                                    food.fiber = 0;
+                                }
+                            }
+                        });
+
+                        if (modified) {
+                            localStorage.setItem(key, JSON.stringify(foods));
+                        }
+                    } catch (e) {
+                        console.error('Error migrating data for key:', key, e);
+                    }
+                }
+            }
+
+            // Mark migration as complete
+            localStorage.setItem('fiber_migration_v1_complete', 'true');
+            console.log(`Fiber migration complete! Updated ${updatedCount} of ${totalFoods} food entries.`);
+        }
+
         // ==================== INITIALIZATION ====================
         function init() {
+            migrateFiberData();
             updateDateDisplays();
             loadGoalsToForm();
             updateHomeDisplay();
